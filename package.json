@@ -1,0 +1,35 @@
+{
+  "name": "form-x",
+  "version": "0.0.0",
+  "workspaces": [
+    "tools"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=20.11.0 || >=21.2.0"
+  },
+  "main": "./dist/form-x.es.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/form-x.es.js",
+      "require": "./dist/form-x.cjs.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "examples": "vite serve examples"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.10",
+    "vite-plugin-dts": "^4.3.0"
+  }
+}
