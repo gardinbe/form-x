@@ -1,6 +1,6 @@
 import type { ControlElement } from '../control/control';
 import { Control } from '../control/control';
-import { watchAttributes, watchChildren } from '../utils';
+import { watchAttrs, watchChildren } from '../utils';
 
 export type FormValidatorElement = HTMLFormElement & {
   validator?: FormValidator;
@@ -10,7 +10,7 @@ export class FormValidator {
   readonly form: HTMLFormElement;
   readonly controls: Set<Control>;
 
-  protected _valid: boolean = true;
+  #valid: boolean = true;
 
   constructor(form: FormValidatorElement) {
     form.validator = this;
@@ -22,9 +22,12 @@ export class FormValidator {
 
     this.scan();
 
-    watchChildren(form, () => {
-      this.scan();
-    });
+    watchChildren(
+      form,
+      () => {
+        this.scan();
+      }
+    );
 
     const submit = (ev: SubmitEvent) => {
       ev.preventDefault();
@@ -47,17 +50,17 @@ export class FormValidator {
   }
 
   get valid() {
-    return this._valid;
+    return this.#valid;
   }
 
   get<T extends Control>(name: string) {
     return Array
       .from(this.controls)
-      .find((field): field is T => field.el.name === name) ?? null;
+      .find((control): control is T => control.el.name === name) ?? null;
   }
 
   async check() {
-    this._valid = true;
+    this.#valid = true;
 
     const controls = Array.from(this.controls);
 
@@ -69,7 +72,7 @@ export class FormValidator {
     const valid = controls
       .every((control) => control.valid);
 
-    this._valid = valid;
+    this.#valid = valid;
 
     return valid;
   }
@@ -113,22 +116,21 @@ export class FormValidator {
     }
   }
 
-  add(field: Control) {
-    watchAttributes(
-      field.el,
-      'type',
+  add(control: Control) {
+    const watchControlAttrs = watchAttrs(
+      control.el,
       () => {
-        this.remove(field);
-        this.add(
-          new Control(field.el)
-        );
+        this.remove(control);
+        this.add(new Control(control.el));
       }
     );
 
-    this.controls.add(field);
+    watchControlAttrs('type');
+
+    this.controls.add(control);
   }
 
-  remove(field: Control) {
-    this.controls.delete(field);
+  remove(control: Control) {
+    this.controls.delete(control);
   }
 }

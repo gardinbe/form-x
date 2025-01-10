@@ -33,7 +33,7 @@ export type ValidateFn = (ctx: {
 export interface ValidatorConfig {
   name: string;
   priority: ValidatorPriority;
-  attr: string | string[];
+  attribute: string | string[];
   validate: ValidateFn;
 }
 
@@ -42,15 +42,15 @@ export class Validator {
   readonly priority: ValidatorPriority;
   readonly attrs: string[];
 
-  protected readonly _validate: ValidateFn;
+  readonly #validate: ValidateFn;
 
   constructor(config: ValidatorConfig) {
     this.name = config.name;
     this.priority = config.priority;
-    this.attrs = arrayify(config.attr)
+    this.attrs = arrayify(config.attribute)
       .map((attr) => `fx-${attr}`);
 
-    this._validate = async (ctx) => config.validate(ctx);
+    this.#validate = async (ctx) => config.validate(ctx);
   }
 
   async exec(control: Control): Promise<Validation | RevokedValidation> {
@@ -77,7 +77,7 @@ export class Validator {
         };
       }
 
-      const result = await this._validate({
+      const result = await this.#validate({
         value: control.el.value,
         attr,
         control

@@ -14,11 +14,17 @@
   <title>Document</title>
   <script
     type="module"
-    src="./demo.js"
+    src="./demo.ts"
   ></script>
 </head>
 
 <body>
+  <style>
+    [fx-checking=true] {
+      background: gray;
+    }
+  </style>
+
   <form fx-form>
 
     <fieldset>
@@ -35,6 +41,8 @@
         fx-required-fail="Please enter an email address"
         fx-preset-pattern="email"
         fx-preset-pattern-fail="This is not a valid email address"
+        fx-is-cool
+        fx-is-cool-fail="This email is not cool enough (include the word 'cool' in the email address)"
       />
       <ul fx-errors-for="email"></ul>
     </fieldset>

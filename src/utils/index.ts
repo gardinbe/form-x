@@ -11,10 +11,6 @@ export {
 } from './attr';
 
 export {
-  domReady
-} from './dom-ready';
-
-export {
-  watchAttributes,
+  watchAttrs,
   watchChildren
 } from './watch';

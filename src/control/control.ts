@@ -5,8 +5,9 @@ import {
   multiAttr,
   setAttr,
   truthyAttr,
-  watchAttributes
+  watchAttrs
 } from '../utils';
+import type { WatchAttributesFn } from '../utils/watch';
 import { Validators } from '../validator/core';
 import type { Validator } from '../validator/validator';
 
@@ -23,43 +24,64 @@ export type MultiControlElement = HTMLInputElement;
 export class Control<E extends ControlElement = ControlElement> {
   readonly el: E;
   readonly memberEls: Set<MultiControlElement> = new Set();
+  readonly errorsEl: HTMLElement | null;
+  readonly errors: Set<string>;
+  readonly validators: Map<string, Validator>;
   readonly validationRevokers: Map<Validator, () => void>;
 
-  protected _valid: boolean;
-  protected readonly _validators: Map<string, Validator>;
-  protected readonly _errorsEl: HTMLElement | null;
-  protected readonly _errors: Set<string>;
+  #valid: boolean;
+  readonly #watchValidatorAttrs: WatchAttributesFn;
 
-  protected _handler: EventListener;
-  protected _listening: boolean;
-  protected _events: Set<string>;
+  #handler: EventListener;
+  #listening: boolean;
+  #events: Set<string>;
+  readonly #watchEventAttrs: WatchAttributesFn;
 
   constructor(el: E) {
     el.validator = this;
 
     this.el = el;
     this.memberEls = new Set(
-      el.form && (el.type === 'radio' || el.type === 'checkbox')
+      el.form
+      && (
+        el.type === 'radio'
+        || el.type === 'checkbox'
+      )
         ? Array
           .from(el.form.elements as HTMLCollectionOf<MultiControlElement>)
           .filter((el) => el.name === this.el.name)
         : [el as MultiControlElement]
     );
 
-    this._valid = true;
-    this._errorsEl = document
+    this.#valid = true;
+    this.errorsEl = document
       .querySelector(`[fx-errors-for='${el.name}']`);
-    this._errors = new Set();
+    this.errors = new Set();
 
-    this._handler = () => void this.check();
-    this._listening = false;
-    this._events = new Set(
+    this.#handler = () => void this.check();
+    this.#listening = false;
+    this.#events = new Set(
       multiAttr(getAttr(el, 'fx-on'))
     );
 
-    this.bind();
+    this.#bind();
 
-    this._validators = new Map(
+    this.#watchEventAttrs = watchAttrs(
+      el,
+      () => {
+        this.#unbind();
+
+        this.#events = new Set(
+          multiAttr(getAttr(el, 'fx-on'))
+        );
+
+        this.#bind();
+      }
+    );
+    this.#watchEventAttrs('fx-on');
+
+    this.validationRevokers = new Map();
+    this.validators = new Map(
       Object
         .values(Validators)
         .map((validator) => [
@@ -67,45 +89,19 @@ export class Control<E extends ControlElement = ControlElement> {
           validator
         ])
     );
-    this.validationRevokers = new Map();
+
+    this.#watchValidatorAttrs = watchAttrs(
+      this.el,
+      () => void this.check()
+    );
+    this.#loadValidatorAttrs();
 
     this.$valid = true;
     this.$checking = false;
-
-    watchAttributes(
-      el,
-      Array
-        .from(this._validators.values())
-        .flatMap((validator) => arrayify(validator.attrs))
-        .flatMap((attr) => [
-          attr,
-          attrFailReason(attr)
-        ])
-        .concat([
-          'disabled',
-          'fx-validate',
-          'fx-display-name'
-        ]),
-      () => void this.check()
-    );
-
-    watchAttributes(
-      el,
-      'fx-on',
-      () => {
-        this.unbind();
-
-        this._events = new Set(
-          multiAttr(getAttr(el, 'fx-on'))
-        );
-
-        this.bind();
-      }
-    );
   }
 
-  get valid() {
-    return this._valid;
+  get valid(): boolean {
+    return this.#valid;
   }
 
   async check() {
@@ -119,22 +115,22 @@ export class Control<E extends ControlElement = ControlElement> {
 
     this.$checking = true;
 
-    this.clearErrors();
+    this.#clearErrors();
 
     let invalidated = false as boolean;
 
     await Promise.all(
       Array
-        .from(this._validators.values())
+        .from(this.validators.values())
         .map(async (validator) => {
           const result = await validator.exec(this);
 
           if (
             'revoked' in result
-          || (
-            'valid' in result
-            && result.valid
-          )
+            || (
+              'valid' in result
+              && result.valid
+            )
           ) {
             return;
           }
@@ -151,81 +147,106 @@ export class Control<E extends ControlElement = ControlElement> {
     this.$checking = false;
   }
 
-  protected bind() {
-    if (this._listening) {
-      console.warn(`Form-X: "${this.$dname}" already has listeners bound; an attempt to rebind listeners was ignored`);
-      return;
-    }
-
-    for (const el of this.memberEls) {
-      for (const ev of this._events) {
-        el.addEventListener(ev, this._handler);
-      }
-    }
-
-    this._listening = true;
-  }
-
-  protected unbind() {
-    if (!this._listening) {
-      console.warn(`Form-X: "${this.$dname}" has no listeners to unbind; an attempt to unbind listeners was ignored`);
-      return;
-    }
-
-    for (const el of this.memberEls) {
-      for (const ev of this._events) {
-        el.removeEventListener(ev, this._handler);
-      }
-    }
-
-    this._listening = false;
-  }
-
-  protected clearErrors() {
-    this._errors.clear();
-    this._errorsEl?.replaceChildren();
-  }
-
   validate() {
-    this._valid = true;
+    this.#valid = true;
     this.$valid = true;
 
-    this.clearErrors();
+    this.#clearErrors();
   }
 
   invalidate(reason: string) {
-    this._valid = false;
+    this.#valid = false;
     this.$valid = false;
 
-    this._errors.add(reason);
+    this.errors.add(reason);
 
-    if (!this._errorsEl) {
+    if (!this.errorsEl) {
       return;
     }
 
     const li = document.createElement('li');
     li.textContent = reason;
 
-    this._errorsEl.appendChild(li);
+    this.errorsEl.appendChild(li);
   }
 
-  get $valid() {
+  #clearErrors() {
+    this.errors.clear();
+    this.errorsEl?.replaceChildren();
+  }
+
+  addValidator(validator: Validator) {
+    this.validators.set(validator.name, validator);
+    this.#loadValidatorAttrs();
+  }
+
+  removeValidator(validator: Validator) {
+    this.validators.delete(validator.name);
+    this.#loadValidatorAttrs();
+  }
+
+  #loadValidatorAttrs() {
+    this.#watchValidatorAttrs(
+      ...Array
+        .from(this.validators.values())
+        .flatMap((validator) => arrayify(validator.attrs))
+        .flatMap((attr) => [
+          attr,
+          attrFailReason(attr)
+        ])
+        .concat([
+          'disabled',
+          'fx-validate',
+          'fx-display-name'
+        ])
+    );
+  }
+
+  #bind() {
+    if (this.#listening) {
+      return;
+    }
+
+    for (const el of this.memberEls) {
+      for (const ev of this.#events) {
+        el.addEventListener(ev, this.#handler);
+      }
+    }
+
+    this.#listening = true;
+  }
+
+  #unbind() {
+    if (!this.#listening) {
+      return;
+    }
+
+    for (const el of this.memberEls) {
+      for (const ev of this.#events) {
+        el.removeEventListener(ev, this.#handler);
+      }
+    }
+
+    this.#listening = false;
+  }
+
+  get $valid(): boolean {
     return truthyAttr(getAttr(this.el, 'fx-valid'));
   }
 
-  get $checking() {
+  get $checking(): boolean {
     return truthyAttr(getAttr(this.el, 'fx-checking'));
   }
 
-  get $dname() {
+  get $dname(): string {
     return getAttr(this.el, 'fx-display-name') ?? 'Field';
   }
 
-  get $disabled() {
+  get $disabled(): boolean {
     return this.el.disabled;
   }
 
-  get $validate() {
+  get $validate(): boolean {
     return truthyAttr(getAttr(this.el, 'fx-validate'));
   }
 

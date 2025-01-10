@@ -3,7 +3,7 @@ import { Validator, ValidatorPriority } from '../validator';
 
 export const required = new Validator({
   name: 'required',
-  attr: 'required',
+  attribute: 'required',
   priority: ValidatorPriority.HIGH,
   validate: ({ value, attr, control }) => {
     if (!truthyAttr(attr)) {

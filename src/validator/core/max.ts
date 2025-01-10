@@ -2,7 +2,7 @@ import { Validator, ValidatorPriority } from '../validator';
 
 export const max = new Validator({
   name: 'max-value',
-  attr: 'max',
+  attribute: 'max',
   priority: ValidatorPriority.MEDIUM,
   validate: ({ value, attr, control }) => {
     const max = parseInt(attr);

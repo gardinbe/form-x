@@ -2,7 +2,7 @@ import { Validator, ValidatorPriority } from '../validator';
 
 export const pattern = new Validator({
   name: 'pattern',
-  attr: 'pattern',
+  attribute: 'pattern',
   priority: ValidatorPriority.LOW,
   validate: ({ value, attr, control }) => {
     let pattern;

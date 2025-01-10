@@ -22,7 +22,7 @@ const presets: PresetPattern[] = [
 
 export const presetPattern = new Validator({
   name: 'preset-pattern',
-  attr: 'preset-pattern',
+  attribute: 'preset-pattern',
   priority: ValidatorPriority.LOW,
   validate: ({ value, attr, control }) => {
     const selectedPresets = multiAttr(attr)

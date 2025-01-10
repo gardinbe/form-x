@@ -92,7 +92,10 @@ export default [
   // App
 
   {
-    files: ['src/**'],
+    files: [
+      'src/**',
+      'demo/**'
+    ],
     languageOptions: {
       sourceType: 'module',
       ecmaVersion: 'latest',

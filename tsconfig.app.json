@@ -1,6 +1,8 @@
 {
   "extends": "./tools/tsconfig/web",
   "include": [
-    "src/"
+    "src/",
+    "dist/",
+    "demo/"
   ]
 }

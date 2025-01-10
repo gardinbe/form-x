@@ -2,7 +2,7 @@ import { Validator, ValidatorPriority } from '../validator';
 
 export const minLen = new Validator({
   name: 'min-length',
-  attr: 'min-len',
+  attribute: 'min-len',
   priority: ValidatorPriority.MEDIUM,
   validate: ({ value, attr, control }) => {
     const minLen = parseInt(attr);
