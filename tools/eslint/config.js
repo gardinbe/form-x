@@ -294,11 +294,11 @@ export default [
       ],
       'import/consistent-type-specifier-style': [
         'error',
-        'prefer-inline'
+        'prefer-top-level'
       ],
       'import/no-duplicates': [
         'error',
-        { 'prefer-inline': true }
+        { 'prefer-inline': false }
       ],
 
       // Prefer-arrow-functions

@@ -1,30 +1,49 @@
-import { Control, type ControlElement } from './controls/control';
-import { MultiControl, type MultiControlElement } from './controls/multi-control';
-import { watchAttributes, watchChildren } from './utils';
-import { type Validator } from './validators/validator';
+import type { ControlElement } from '../control/control';
+import { Control } from '../control/control';
+import { watchAttributes, watchChildren } from '../utils';
+
+export type FormValidatorElement = HTMLFormElement & {
+  validator?: FormValidator;
+};
 
 export class FormValidator {
   readonly form: HTMLFormElement;
   readonly controls: Set<Control>;
-  readonly validators: Validator[] | undefined;
 
-  private _valid: boolean = true;
+  protected _valid: boolean = true;
 
-  constructor(
-    form: HTMLFormElement,
-    validators?: Validator[]
-  ) {
+  constructor(form: FormValidatorElement) {
+    form.validator = this;
+
     form.noValidate = true;
 
     this.form = form;
     this.controls = new Set();
-    this.validators = validators;
 
-    this.update();
+    this.scan();
 
-    watchChildren(this.form, () => {
-      this.update();
+    watchChildren(form, () => {
+      this.scan();
     });
+
+    const submit = (ev: SubmitEvent) => {
+      ev.preventDefault();
+
+      const check = async () => {
+        await this.check();
+
+        if (!this.valid) {
+          return;
+        }
+
+        form.removeEventListener('submit', submit);
+        form.submit();
+      };
+
+      void check();
+    };
+
+    form.addEventListener('submit', submit);
   }
 
   get valid() {
@@ -34,16 +53,16 @@ export class FormValidator {
   get<T extends Control>(name: string) {
     return Array
       .from(this.controls)
-      .find((field): field is T => field.element.name === name) ?? null;
+      .find((field): field is T => field.el.name === name) ?? null;
   }
 
-  async validate() {
+  async check() {
     this._valid = true;
 
     const controls = Array.from(this.controls);
 
     const prom = controls
-      .map((control) => control.validate.bind(control));
+      .map(async (control) => control.check());
 
     await Promise.all(prom);
 
@@ -57,20 +76,20 @@ export class FormValidator {
 
   watch() {
     for (const field of this.controls) {
-      field.listen();
+      field.bind();
     }
   }
 
   ignore() {
     for (const field of this.controls) {
-      field.ignore();
+      field.unbind();
     }
   }
 
-  private update() {
+  scan() {
     const els = Array
       .from(this.form.elements)
-      .filter((el) =>
+      .filter((el): el is ControlElement =>
         el instanceof HTMLInputElement
         || el instanceof HTMLTextAreaElement
         || el instanceof HTMLSelectElement);
@@ -79,11 +98,11 @@ export class FormValidator {
       const
         hasExistingControl = Array
           .from(this.controls)
-          .some((control) => control.element === el),
+          .some((control) => control.el === el),
         hasControlWithSameName = el.name !== ''
           && Array
             .from(this.controls)
-            .some((control) => control.element.name === el.name);
+            .some((control) => control.el.name === el.name);
 
       if (
         hasExistingControl
@@ -92,37 +111,29 @@ export class FormValidator {
         continue;
       }
 
-      const control = this.create(el);
+      const control = el.validator ?? new Control(el);
       this.add(control);
     }
 
     const missingControls = Array
       .from(this.controls)
       .filter((control) => !els
-        .some((el) => control.element === el));
+        .some((el) => control.el === el));
 
     for (const control of missingControls) {
       this.remove(control);
     }
   }
 
-  create(el: ControlElement) {
-    switch (el.type) {
-      case 'radio':
-      case 'checkbox':
-        return new MultiControl(el as MultiControlElement, this.validators);
-      default:
-        return new Control(el, this.validators);
-    }
-  }
-
   add(field: Control) {
     watchAttributes(
-      field.element,
+      field.el,
       'type',
       () => {
         this.remove(field);
-        this.add(this.create(field.element));
+        this.add(
+          new Control(field.el)
+        );
       }
     );
 

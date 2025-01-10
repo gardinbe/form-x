@@ -1,4 +1,20 @@
-export * from './attr';
-export * from './truthy-attr';
-export * from './watch-attributes';
-export * from './watch-children';
+export {
+  arrayify
+} from './arrayify';
+
+export {
+  attrFailReason,
+  getAttr,
+  multiAttr,
+  setAttr,
+  truthyAttr
+} from './attr';
+
+export {
+  domReady
+} from './dom-ready';
+
+export {
+  watchAttributes,
+  watchChildren
+} from './watch';

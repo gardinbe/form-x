@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    http-equiv="X-UA-Compatible"
+    content="IE=edge"
+  />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+  <title>Document</title>
+  <script
+    type="module"
+    src="./demo.js"
+  ></script>
+</head>
+
+<body>
+  <form fx-form>
+
+    <fieldset>
+      <label for="email">
+        Email address:
+      </label>
+      <input
+        type="text"
+        name="email"
+        fx-validate
+        fx-on="input"
+        fx-display-name="Email"
+        fx-required
+        fx-required-fail="Please enter an email address"
+        fx-preset-pattern="email"
+        fx-preset-pattern-fail="This is not a valid email address"
+      />
+      <ul fx-errors-for="email"></ul>
+    </fieldset>
+
+    <fieldset>
+      <label for="password">
+        Password:
+      </label>
+      <input
+        type="password"
+        name="password"
+        fx-validate
+        fx-on="input"
+        fx-display-name="Password"
+        fx-required
+        fx-required-fail="Please enter a password"
+        fx-min-len="6"
+        fx-min-len-fail="Password must be at least 6 characters"
+      />
+      <ul fx-errors-for="password"></ul>
+    </fieldset>
+
+    <fieldset>
+      <label for="age">
+        Age:
+      </label>
+      <input
+        type="number"
+        name="age"
+        min="0"
+        max="100"
+        fx-validate
+        fx-on="input"
+        fx-display-name="Age"
+        fx-required
+        fx-required-fail="Please enter an age"
+        fx-min="0"
+        fx-min-fail="Age must be greater than 0"
+        fx-max="100"
+        fx-max-fail="Age must be less than 100"
+      />
+      <ul fx-errors-for="age"></ul>
+    </fieldset>
+
+    <fieldset>
+      <label for="gender">
+        Gender:
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="gender"
+          value="male"
+          fx-validate
+          fx-on="change"
+          fx-display-name="Gender"
+          fx-required
+          fx-required-fail="Please select a gender"
+        />
+        Male
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="gender"
+          value="female"
+        />
+        Female
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="gender"
+          value="other"
+        />
+        Other
+      </label>
+      <ul fx-errors-for="gender"></ul>
+    </fieldset>
+
+    <fieldset>
+      <label for="occupation">
+        Occupation:
+      </label>
+      <select
+        name="occupation"
+        fx-validate
+        fx-on="change"
+        fx-display-name="Occupation"
+        fx-required
+        fx-required-fail="Please select an occupation"
+      >
+        <option value="">Select an occupation</option>
+        <option value="student">Student</option>
+        <option value="teacher">Teacher</option>
+        <option value="other">Other</option>
+      </select>
+      <ul fx-errors-for="occupation"></ul>
+    </fieldset>
+
+    <button type="submit">
+      Register
+    </button>
+  </form>
+</body>
+
+</html>

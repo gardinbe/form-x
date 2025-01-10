@@ -21,10 +21,11 @@
     }
   },
   "scripts": {
+    "lint": "eslint . --fix",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "examples": "vite serve examples"
+    "demo": "vite serve demo"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
