@@ -61,10 +61,10 @@ export class FormValidator {
 
     const controls = Array.from(this.controls);
 
-    const prom = controls
-      .map(async (control) => control.check());
-
-    await Promise.all(prom);
+    await Promise.all(
+      controls
+        .map(async (control) => control.check())
+    );
 
     const valid = controls
       .every((control) => control.valid);
@@ -72,18 +72,6 @@ export class FormValidator {
     this._valid = valid;
 
     return valid;
-  }
-
-  watch() {
-    for (const field of this.controls) {
-      field.bind();
-    }
-  }
-
-  ignore() {
-    for (const field of this.controls) {
-      field.unbind();
-    }
   }
 
   scan() {
@@ -95,11 +83,11 @@ export class FormValidator {
         || el instanceof HTMLSelectElement);
 
     for (const el of els) {
-      const
-        hasExistingControl = Array
-          .from(this.controls)
-          .some((control) => control.el === el),
-        hasControlWithSameName = el.name !== ''
+      const hasExistingControl = Array
+        .from(this.controls)
+        .some((control) => control.el === el);
+
+      const hasControlWithSameName = el.name !== ''
           && Array
             .from(this.controls)
             .some((control) => control.el.name === el.name);

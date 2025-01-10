@@ -151,7 +151,7 @@ export class Control<E extends ControlElement = ControlElement> {
     this.$checking = false;
   }
 
-  bind() {
+  protected bind() {
     if (this._listening) {
       console.warn(`Form-X: "${this.$dname}" already has listeners bound; an attempt to rebind listeners was ignored`);
       return;
@@ -166,7 +166,7 @@ export class Control<E extends ControlElement = ControlElement> {
     this._listening = true;
   }
 
-  unbind() {
+  protected unbind() {
     if (!this._listening) {
       console.warn(`Form-X: "${this.$dname}" has no listeners to unbind; an attempt to unbind listeners was ignored`);
       return;
@@ -181,7 +181,7 @@ export class Control<E extends ControlElement = ControlElement> {
     this._listening = false;
   }
 
-  clearErrors() {
+  protected clearErrors() {
     this._errors.clear();
     this._errorsEl?.replaceChildren();
   }
@@ -213,16 +213,8 @@ export class Control<E extends ControlElement = ControlElement> {
     return truthyAttr(getAttr(this.el, 'fx-valid'));
   }
 
-  protected set $valid(value) {
-    setAttr(this.el, 'fx-valid', `${value}`);
-  }
-
   get $checking() {
     return truthyAttr(getAttr(this.el, 'fx-checking'));
-  }
-
-  protected set $checking(value) {
-    setAttr(this.el, 'fx-checking', `${value}`);
   }
 
   get $dname() {
@@ -235,5 +227,13 @@ export class Control<E extends ControlElement = ControlElement> {
 
   get $validate() {
     return truthyAttr(getAttr(this.el, 'fx-validate'));
+  }
+
+  protected set $valid(value) {
+    setAttr(this.el, 'fx-valid', `${value}`);
+  }
+
+  protected set $checking(value) {
+    setAttr(this.el, 'fx-checking', `${value}`);
   }
 }
