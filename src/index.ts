@@ -1,10 +1,19 @@
 import './init';
 
+export type {
+  FXConfig
+} from './config';
+
 export {
-  Control,
-  type ControlElement,
-  type MultiControlElement
+  FXControl,
+  type FXControlElement,
+  type FXMultiControlElement
 } from './control/control';
+
+export {
+  FXForm,
+  type FXFormElement
+} from './form/form';
 
 export {
   type Fail,
@@ -13,16 +22,16 @@ export {
   type ValidateFn,
   type Validation,
   Validator,
-  type ValidatorConfig,
   type ValidatorInstance,
-  ValidatorPriority
+  ValidatorPriority,
+  type ValidatorRevoker,
+  type ValidatorSetup
 } from './validator/validator';
-
-export {
-  FormValidator,
-  type FormValidatorElement
-} from './form/form-validator';
 
 export {
   Validators
 } from './validator/core';
+
+export {
+  fx
+} from './config';

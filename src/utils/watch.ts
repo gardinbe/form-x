@@ -8,13 +8,13 @@ export type WatchAttributesFn = (...attrs: string[]) => void;
  * @param callback - Callback to execute when the attributes change.
  * @returns Attribute watcher function.
  */
-export const watchAttrs = (
+export const attrWatcher = (
   el: Element,
   callback: MutationCallback
 ): WatchAttributesFn => {
   const observer = new MutationObserver(callback);
 
-  const run = (attrs: string | string[]) => {
+  const watch = (attrs: string | string[]) => {
     observer.disconnect();
     observer.observe(el, {
       attributes: true,
@@ -22,7 +22,7 @@ export const watchAttrs = (
     });
   };
 
-  return run;
+  return watch;
 };
 
 /**
@@ -30,7 +30,7 @@ export const watchAttrs = (
  * @param el - Element to watch.
  * @param callback - Callback to execute when the children change.
  */
-export const watchChildren = (
+export const childWatcher = (
   el: Element,
   callback: MutationCallback
 ) => {

@@ -1,44 +1,45 @@
 import {
   arrayify,
   attrFailReason,
+  attrWatcher,
   getAttr,
   multiAttr,
   setAttr,
-  truthyAttr,
-  watchAttrs
+  truthyAttr
 } from '../utils';
 import type { WatchAttributesFn } from '../utils/watch';
 import { Validators } from '../validator/core';
-import type { Validator } from '../validator/validator';
+import type { ValidatorRevoker, ValidatorSetup } from '../validator/validator';
+import { Validator } from '../validator/validator';
 
-export type ControlElement = (
+export type FXControlElement = (
   | HTMLInputElement
   | HTMLTextAreaElement
   | HTMLSelectElement
 ) & {
-  validator?: Control;
+  fx?: FXControl;
 };
 
-export type MultiControlElement = HTMLInputElement;
+export type FXMultiControlElement = HTMLInputElement;
 
-export class Control<E extends ControlElement = ControlElement> {
+export class FXControl<E extends FXControlElement = FXControlElement> {
   readonly el: E;
-  readonly memberEls: Set<MultiControlElement> = new Set();
+  readonly memberEls: Set<FXMultiControlElement> = new Set();
   readonly errorsEl: HTMLElement | null;
   readonly errors: Set<string>;
   readonly validators: Map<string, Validator>;
-  readonly validationRevokers: Map<Validator, () => void>;
+  readonly validationRevokers: Map<Validator, ValidatorRevoker>;
 
   #valid: boolean;
-  readonly #watchValidatorAttrs: WatchAttributesFn;
+  readonly #setValidatorAttrs: WatchAttributesFn;
 
   #handler: EventListener;
   #listening: boolean;
   #events: Set<string>;
-  readonly #watchEventAttrs: WatchAttributesFn;
+  readonly #setEventAttrs: WatchAttributesFn;
 
   constructor(el: E) {
-    el.validator = this;
+    el.fx = this;
 
     this.el = el;
     this.memberEls = new Set(
@@ -48,9 +49,9 @@ export class Control<E extends ControlElement = ControlElement> {
         || el.type === 'checkbox'
       )
         ? Array
-          .from(el.form.elements as HTMLCollectionOf<MultiControlElement>)
+          .from(el.form.elements as HTMLCollectionOf<FXMultiControlElement>)
           .filter((el) => el.name === this.el.name)
-        : [el as MultiControlElement]
+        : [el as FXMultiControlElement]
     );
 
     this.#valid = true;
@@ -66,7 +67,7 @@ export class Control<E extends ControlElement = ControlElement> {
 
     this.#bind();
 
-    this.#watchEventAttrs = watchAttrs(
+    this.#setEventAttrs = attrWatcher(
       el,
       () => {
         this.#unbind();
@@ -78,7 +79,7 @@ export class Control<E extends ControlElement = ControlElement> {
         this.#bind();
       }
     );
-    this.#watchEventAttrs('fx-on');
+    this.#setEventAttrs('fx-on');
 
     this.validationRevokers = new Map();
     this.validators = new Map(
@@ -90,7 +91,7 @@ export class Control<E extends ControlElement = ControlElement> {
         ])
     );
 
-    this.#watchValidatorAttrs = watchAttrs(
+    this.#setValidatorAttrs = attrWatcher(
       this.el,
       () => void this.check()
     );
@@ -175,18 +176,26 @@ export class Control<E extends ControlElement = ControlElement> {
     this.errorsEl?.replaceChildren();
   }
 
-  addValidator(validator: Validator) {
-    this.validators.set(validator.name, validator);
+  registerValidator(validator: Validator | ValidatorSetup): void {
+    const _validator = validator instanceof Validator
+      ? validator
+      : new Validator(validator);
+
+    this.validators.set(validator.name, _validator);
     this.#loadValidatorAttrs();
   }
 
-  removeValidator(validator: Validator) {
-    this.validators.delete(validator.name);
+  unregisterValidator(validator: Validator | string): void {
+    const name = typeof validator === 'string'
+      ? validator
+      : validator.name;
+
+    this.validators.delete(name);
     this.#loadValidatorAttrs();
   }
 
   #loadValidatorAttrs() {
-    this.#watchValidatorAttrs(
+    this.#setValidatorAttrs(
       ...Array
         .from(this.validators.values())
         .flatMap((validator) => arrayify(validator.attrs))

@@ -11,6 +11,6 @@ export {
 } from './attr';
 
 export {
-  watchAttrs,
-  watchChildren
+  attrWatcher,
+  childWatcher
 } from './watch';

@@ -1,19 +1,19 @@
-import type { ControlElement } from '../control/control';
-import { Control } from '../control/control';
-import { watchAttrs, watchChildren } from '../utils';
+import type { FXControlElement } from '../control/control';
+import { FXControl } from '../control/control';
+import { attrWatcher, childWatcher } from '../utils';
 
-export type FormValidatorElement = HTMLFormElement & {
-  validator?: FormValidator;
+export type FXFormElement = HTMLFormElement & {
+  fx?: FXForm;
 };
 
-export class FormValidator {
+export class FXForm {
   readonly form: HTMLFormElement;
-  readonly controls: Set<Control>;
+  readonly controls: Set<FXControl>;
 
   #valid: boolean = true;
 
-  constructor(form: FormValidatorElement) {
-    form.validator = this;
+  constructor(form: FXFormElement) {
+    form.fx = this;
 
     form.noValidate = true;
 
@@ -22,7 +22,7 @@ export class FormValidator {
 
     this.scan();
 
-    watchChildren(
+    childWatcher(
       form,
       () => {
         this.scan();
@@ -53,7 +53,7 @@ export class FormValidator {
     return this.#valid;
   }
 
-  get<T extends Control>(name: string) {
+  get<T extends FXControl>(name: string) {
     return Array
       .from(this.controls)
       .find((control): control is T => control.el.name === name) ?? null;
@@ -80,7 +80,7 @@ export class FormValidator {
   scan() {
     const els = Array
       .from(this.form.elements)
-      .filter((el): el is ControlElement =>
+      .filter((el): el is FXControlElement =>
         el instanceof HTMLInputElement
         || el instanceof HTMLTextAreaElement
         || el instanceof HTMLSelectElement);
@@ -102,7 +102,7 @@ export class FormValidator {
         continue;
       }
 
-      const control = el.validator ?? new Control(el);
+      const control = el.fx ?? new FXControl(el);
       this.add(control);
     }
 
@@ -116,21 +116,21 @@ export class FormValidator {
     }
   }
 
-  add(control: Control) {
-    const watchControlAttrs = watchAttrs(
+  add(control: FXControl) {
+    const setControlAttrs = attrWatcher(
       control.el,
       () => {
         this.remove(control);
-        this.add(new Control(control.el));
+        this.add(new FXControl(control.el));
       }
     );
 
-    watchControlAttrs('type');
+    setControlAttrs('type');
 
     this.controls.add(control);
   }
 
-  remove(control: Control) {
+  remove(control: FXControl) {
     this.controls.delete(control);
   }
 }

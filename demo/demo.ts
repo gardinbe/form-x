@@ -1,17 +1,13 @@
+import '../src';
+
 /* eslint-disable */
 
-import type { ControlElement } from '../src';
-import { Validator, ValidatorPriority } from '../src';
+// register the validator to be used like any of the built in ones, by setting
+// the `fx-is-cool` attribute, and optionally the `fx-is-cool-fail` attribute
 
-const email = document.querySelector<ControlElement>(
-  'input[name="email"]'
-);
-
-// create a custom validator
-
-const cool = new Validator({
+window.fx.registerValidator({
   name: 'is-cool',
-  priority: ValidatorPriority.MEDIUM,
+  priority: 1,
   attribute: 'is-cool',
   async validate({ value, control }) {
     await delay(2000);
@@ -23,13 +19,6 @@ const cool = new Validator({
     return { valid: true };
   }
 });
-
-// then register it with a control
-
-email!.validator!.addValidator(cool);
-
-// and now this validator can be used like any of the built in ones, by setting
-// the `fx-is-cool` attribute, and optionally the `fx-is-cool-fail` attribute
 
 /**
  * Creates an artificial delay.

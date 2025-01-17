@@ -1,4 +1,4 @@
-import type { Control } from '../control/control';
+import type { FXControl } from '../control/control';
 import { arrayify, attrFailReason, getAttr } from '../utils';
 
 export type Validation = Pass | Fail;
@@ -27,10 +27,12 @@ export type ValidatorInstance = Validation | Promise<Validation>;
 export type ValidateFn = (ctx: {
   value: string;
   attr: string;
-  control: Control;
+  control: FXControl;
 }) => ValidatorInstance;
 
-export interface ValidatorConfig {
+export type ValidatorRevoker = () => void;
+
+export interface ValidatorSetup {
   name: string;
   priority: ValidatorPriority;
   attribute: string | string[];
@@ -44,16 +46,16 @@ export class Validator {
 
   readonly #validate: ValidateFn;
 
-  constructor(config: ValidatorConfig) {
-    this.name = config.name;
-    this.priority = config.priority;
-    this.attrs = arrayify(config.attribute)
+  constructor(setup: ValidatorSetup) {
+    this.name = setup.name;
+    this.priority = setup.priority;
+    this.attrs = arrayify(setup.attribute)
       .map((attr) => `fx-${attr}`);
 
-    this.#validate = async (ctx) => config.validate(ctx);
+    this.#validate = async (ctx) => setup.validate(ctx);
   }
 
-  async exec(control: Control): Promise<Validation | RevokedValidation> {
+  async exec(control: FXControl): Promise<Validation | RevokedValidation> {
     const revokePrev = control.validationRevokers.get(this);
 
     if (revokePrev) {
@@ -62,7 +64,7 @@ export class Validator {
 
     let revoked = false;
 
-    const revoke = () => {
+    const revoker: ValidatorRevoker = () => {
       revoked = true;
     };
 
@@ -105,7 +107,7 @@ export class Validator {
 
     const validation = runValidator();
 
-    control.validationRevokers.set(this, revoke);
+    control.validationRevokers.set(this, revoker);
 
     const result = await validation;
 

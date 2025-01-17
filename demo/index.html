@@ -48,12 +48,33 @@
     </fieldset>
 
     <fieldset>
+      <label for="username">
+        Username:
+      </label>
+      <input
+        type="text"
+        name="username"
+        autocomplete="username"
+        fx-validate
+        fx-on="input"
+        fx-display-name="Username"
+        fx-required
+        fx-required-fail="Please enter a username"
+        fx-min-len="3"
+        fx-is-cool
+        fx-is-cool-fail="This username is not cool enough (include the word 'cool' in your username)"
+      />
+      <ul fx-errors-for="username"></ul>
+    </fieldset>
+
+    <fieldset>
       <label for="password">
         Password:
       </label>
       <input
         type="password"
         name="password"
+        autocomplete="new-password"
         fx-validate
         fx-on="input"
         fx-display-name="Password"
