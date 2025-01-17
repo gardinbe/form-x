@@ -11,14 +11,8 @@ export interface FXConfig {
     controls: Map<FXControlElement, FXControl>;
   };
   init(): void;
-  registerValidator(validator: Validator | ValidatorSetup): void;
-  unregisterValidator(validator: Validator | string): void;
-}
-
-declare global {
-  interface Window {
-    fx: FXConfig;
-  }
+  addValidator(validator: Validator | ValidatorSetup): void;
+  removeValidator(validator: Validator | string): void;
 }
 
 export const fx: FXConfig = {
@@ -27,7 +21,7 @@ export const fx: FXConfig = {
     controls: new Map()
   },
 
-  registerValidator(validator) {
+  addValidator(validator) {
     const _validator = validator instanceof Validator
       ? validator
       : new Validator(validator);
@@ -39,7 +33,7 @@ export const fx: FXConfig = {
     return _validator;
   },
 
-  unregisterValidator(validator) {
+  removeValidator(validator) {
     const name = typeof validator === 'string'
       ? validator
       : validator.name;
@@ -65,5 +59,11 @@ export const fx: FXConfig = {
     }
   }
 };
+
+declare global {
+  interface Window {
+    fx: FXConfig;
+  }
+}
 
 window.fx = fx;

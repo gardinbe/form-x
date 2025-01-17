@@ -1,5 +1,5 @@
-import { multiAttr } from '../../utils';
-import { Validator, ValidatorPriority } from '../validator';
+import { multiAttr } from '../utils';
+import { Validator, ValidatorPriority } from '../validator/validator';
 
 export interface PresetPattern {
   name: string;
@@ -20,39 +20,40 @@ const presets: PresetPattern[] = [
   }
 ];
 
+const getSelectedPresets = (attr: string): PresetPattern[] =>
+  multiAttr(attr)
+    .map((name) => presets
+      .find((preset) => preset.name === name))
+    .filter((preset): preset is PresetPattern => {
+      if (!preset) {
+        throw new Error('Invalid pattern preset');
+      }
+
+      return true;
+    });
+
 export const presetPattern = new Validator({
   name: 'preset-pattern',
   attribute: 'preset-pattern',
   priority: ValidatorPriority.LOW,
   validate: ({ value, attr, control }) => {
-    const selectedPresets = multiAttr(attr)
-      .map((name) => presets
-        .find((preset) => preset.name === name))
-      .filter((preset): preset is PresetPattern => {
-        if (!preset) {
-          throw new Error(`${control.$dname} has an invalid pattern preset`);
-        }
-
-        return true;
-      });
+    const selectedPresets = getSelectedPresets(attr);
 
     const valid = selectedPresets
       .every((preset) => preset.pattern.test(value));
 
     const reason = selectedPresets.length === 1
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      ? selectedPresets[0]!.error(control.$dname)
-      : `${control.$dname} is not in a valid format`;
+      ? selectedPresets[0]!.error(control.name)
+      : `${control.name} is not in a valid format`;
 
     if (!valid) {
-      return {
-        valid: false,
+      return [
+        false,
         reason
-      };
+      ];
     }
 
-    return {
-      valid: true
-    };
+    return [true];
   }
 });

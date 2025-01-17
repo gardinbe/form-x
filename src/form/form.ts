@@ -10,7 +10,7 @@ export class FXForm {
   readonly form: HTMLFormElement;
   readonly controls: Set<FXControl>;
 
-  #valid: boolean = true;
+  #valid: boolean;
 
   constructor(form: FXFormElement) {
     form.fx = this;
@@ -19,6 +19,7 @@ export class FXForm {
 
     this.form = form;
     this.controls = new Set();
+    this.#valid = true;
 
     this.scan();
 

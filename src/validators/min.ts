@@ -1,4 +1,4 @@
-import { Validator, ValidatorPriority } from '../validator';
+import { Validator, ValidatorPriority } from '../validator/validator';
 
 export const min = new Validator({
   name: 'min-value',
@@ -8,7 +8,7 @@ export const min = new Validator({
     const min = parseInt(attr);
 
     if (isNaN(min)) {
-      throw new Error(`${control.$dname} has an invalid minimum value`);
+      throw new Error(`${control.name} has an invalid minimum value`);
     }
 
     const val = parseInt(value);
@@ -17,14 +17,12 @@ export const min = new Validator({
       isNaN(val)
       || val < min
     ) {
-      return {
-        valid: false,
-        reason: `${control.$dname} must be a number greater than or equal to ${min}`
-      };
+      return [
+        false,
+        `${control.name} must be a number greater than or equal to ${min}`
+      ];
     }
 
-    return {
-      valid: true
-    };
+    return [true];
   }
 });

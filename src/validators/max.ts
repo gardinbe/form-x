@@ -1,4 +1,4 @@
-import { Validator, ValidatorPriority } from '../validator';
+import { Validator, ValidatorPriority } from '../validator/validator';
 
 export const max = new Validator({
   name: 'max-value',
@@ -8,7 +8,7 @@ export const max = new Validator({
     const max = parseInt(attr);
 
     if (isNaN(max)) {
-      throw new Error(`${control.$dname} has an invalid maximum value`);
+      throw new Error(`${control.name} has an invalid maximum value`);
     }
 
     const val = parseInt(value);
@@ -17,14 +17,12 @@ export const max = new Validator({
       isNaN(val)
       || val > max
     ) {
-      return {
-        valid: false,
-        reason: `${control.$dname} must be a number less than or equal to ${max}`
-      };
+      return [
+        false,
+        `${control.name} must be a number less than or equal to ${max}`
+      ];
     }
 
-    return {
-      valid: true
-    };
+    return [true];
   }
 });

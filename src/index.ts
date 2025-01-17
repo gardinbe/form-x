@@ -1,5 +1,7 @@
 import './init';
 
+export * as validators from './validators';
+
 export type {
   FXConfig
 } from './config';
@@ -7,7 +9,8 @@ export type {
 export {
   FXControl,
   type FXControlElement,
-  type FXMultiControlElement
+  type FXMultiControlElement,
+  type Revoker
 } from './control/control';
 
 export {
@@ -16,21 +19,15 @@ export {
 } from './form/form';
 
 export {
-  type Fail,
-  type Pass,
-  type RevokedValidation,
-  type ValidateFn,
+  type Result,
+  ResultState,
+  type ValidateFunction,
   type Validation,
+  type ValidationContext,
   Validator,
-  type ValidatorInstance,
   ValidatorPriority,
-  type ValidatorRevoker,
   type ValidatorSetup
 } from './validator/validator';
-
-export {
-  Validators
-} from './validator/core';
 
 export {
   fx

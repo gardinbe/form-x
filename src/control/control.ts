@@ -8,9 +8,11 @@ import {
   truthyAttr
 } from '../utils';
 import type { WatchAttributesFn } from '../utils/watch';
-import { Validators } from '../validator/core';
-import type { ValidatorRevoker, ValidatorSetup } from '../validator/validator';
-import { Validator } from '../validator/validator';
+import type { ValidatorSetup } from '../validator/validator';
+import { ResultState, Validator, ValidatorPriority } from '../validator/validator';
+import * as validators from '../validators';
+
+export type Revoker = () => void;
 
 export type FXControlElement = (
   | HTMLInputElement
@@ -24,18 +26,18 @@ export type FXMultiControlElement = HTMLInputElement;
 
 export class FXControl<E extends FXControlElement = FXControlElement> {
   readonly el: E;
-  readonly memberEls: Set<FXMultiControlElement> = new Set();
+  readonly memberEls: Set<FXMultiControlElement>;
   readonly errorsEl: HTMLElement | null;
   readonly errors: Set<string>;
   readonly validators: Map<string, Validator>;
-  readonly validationRevokers: Map<Validator, ValidatorRevoker>;
+  revoker: Revoker | null;
 
   #valid: boolean;
   readonly #setValidatorAttrs: WatchAttributesFn;
 
   #handler: EventListener;
   #listening: boolean;
-  #events: Set<string>;
+  readonly #events: Set<string>;
   readonly #setEventAttrs: WatchAttributesFn;
 
   constructor(el: E) {
@@ -72,19 +74,23 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
       () => {
         this.#unbind();
 
-        this.#events = new Set(
-          multiAttr(getAttr(el, 'fx-on'))
-        );
+        this.#events.clear();
+
+        const events = multiAttr(getAttr(el, 'fx-on'));
+
+        for (const event of events) {
+          this.#events.add(event);
+        }
 
         this.#bind();
       }
     );
     this.#setEventAttrs('fx-on');
 
-    this.validationRevokers = new Map();
+    this.revoker = null;
     this.validators = new Map(
       Object
-        .values(Validators)
+        .values(validators)
         .map((validator) => [
           validator.name,
           validator
@@ -106,56 +112,81 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
   }
 
   async check() {
-    if (
-      this.$disabled
-      || !this.$validate
-    ) {
-      this.validate();
+    if (this.disabled) {
+      this.setValid();
       return;
     }
 
     this.$checking = true;
-
     this.#clearErrors();
+
+    if (this.revoker) {
+      this.revoker();
+    }
+
+    let revoked = false as boolean;
+
+    this.revoker = () => {
+      revoked = true;
+    };
 
     let invalidated = false as boolean;
 
-    await Promise.all(
-      Array
+    const execValidators = async (priority: ValidatorPriority): Promise<boolean> => {
+      const validators = Array
         .from(this.validators.values())
-        .map(async (validator) => {
-          const result = await validator.exec(this);
+        .filter((validator) => validator.priority === priority);
 
-          if (
-            'revoked' in result
-            || (
-              'valid' in result
-              && result.valid
-            )
-          ) {
-            return;
-          }
+      const validations = validators.map(async (validator) => {
+        const [state, reason] = await validator.exec(this);
 
-          this.invalidate(result.reason);
-          invalidated = true;
-        })
-    );
+        if (
+          revoked
+          || state !== ResultState.FAIL
+        ) {
+          return;
+        }
+
+        this.setInvalid(reason);
+        invalidated = true;
+      });
+
+      await Promise.all(validations);
+
+      if (
+        revoked
+        || invalidated
+      ) {
+        return false;
+      }
+
+      return true;
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    await execValidators(ValidatorPriority.HIGH)
+    && await execValidators(ValidatorPriority.MEDIUM)
+    && await execValidators(ValidatorPriority.LOW);
+
+    if (revoked) {
+      return;
+    }
 
     if (!invalidated) {
-      this.validate();
+      this.setValid();
     }
 
     this.$checking = false;
   }
 
-  validate() {
+  setValid() {
     this.#valid = true;
     this.$valid = true;
 
     this.#clearErrors();
   }
 
-  invalidate(reason: string) {
+  setInvalid(reason: string) {
     this.#valid = false;
     this.$valid = false;
 
@@ -206,7 +237,7 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
         .concat([
           'disabled',
           'fx-validate',
-          'fx-display-name'
+          'fx-name'
         ])
     );
   }
@@ -239,31 +270,22 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
     this.#listening = false;
   }
 
-  get $valid(): boolean {
-    return truthyAttr(getAttr(this.el, 'fx-valid'));
+  get name(): string {
+    return getAttr(this.el, 'fx-name') ?? 'Field';
   }
 
-  get $checking(): boolean {
-    return truthyAttr(getAttr(this.el, 'fx-checking'));
+  get disabled(): boolean {
+    return (
+      this.el.disabled
+      && truthyAttr(getAttr(this.el, 'fx-validate'))
+    );
   }
 
-  get $dname(): string {
-    return getAttr(this.el, 'fx-display-name') ?? 'Field';
-  }
-
-  get $disabled(): boolean {
-    return this.el.disabled;
-  }
-
-  get $validate(): boolean {
-    return truthyAttr(getAttr(this.el, 'fx-validate'));
-  }
-
-  protected set $valid(value) {
+  protected set $valid(value: boolean) {
     setAttr(this.el, 'fx-valid', `${value}`);
   }
 
-  protected set $checking(value) {
+  protected set $checking(value: boolean) {
     setAttr(this.el, 'fx-checking', `${value}`);
   }
 }

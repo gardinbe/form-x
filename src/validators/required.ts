@@ -1,5 +1,5 @@
-import { truthyAttr } from '../../utils';
-import { Validator, ValidatorPriority } from '../validator';
+import { truthyAttr } from '../utils';
+import { Validator, ValidatorPriority } from '../validator/validator';
 
 export const required = new Validator({
   name: 'required',
@@ -7,9 +7,7 @@ export const required = new Validator({
   priority: ValidatorPriority.HIGH,
   validate: ({ value, attr, control }) => {
     if (!truthyAttr(attr)) {
-      return {
-        valid: true
-      };
+      return [true];
     }
 
     if (
@@ -21,26 +19,22 @@ export const required = new Validator({
         .some((el) => el.checked);
 
       if (!valid) {
-        return {
-          valid: false,
-          reason: `${control.$dname} is required`
-        };
+        return [
+          false,
+          `${control.name} is required`
+        ];
       }
 
-      return {
-        valid: true
-      };
+      return [true];
     }
 
     if (value.length === 0) {
-      return {
-        valid: false,
-        reason: `${control.$dname} is required`
-      };
+      return [
+        false,
+        `${control.name} is required`
+      ];
     }
 
-    return {
-      valid: true
-    };
+    return [true];
   }
 });
