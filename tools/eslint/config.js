@@ -288,10 +288,7 @@ export default [
         'error',
         { ignoreStatic: true }
       ],
-      '@typescript-eslint/unified-signatures': [
-        'error',
-        { ignoreDifferentlyNamedParameters: true }
-      ],
+      '@typescript-eslint/unified-signatures': 'off',
 
       // Import
 

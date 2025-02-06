@@ -18,10 +18,12 @@ export const minValue: ValidatorSetupAttributed = {
     const val = Number(ctx.value);
 
     if (
-      isNaN(val)
-      || val < min
+      !isNaN(val)
+      && val >= min
     ) {
-      i(`${ctx.name} must be greater than or equal to ${min}`);
+      return;
     }
+
+    i(`${ctx.name} must be greater than or equal to ${min}`);
   }
 };

@@ -14,8 +14,10 @@ export const pattern: ValidatorSetupAttributed = {
       throw new Error(`${ctx.name} has an invalid pattern`);
     }
 
-    if (!pattern.test(ctx.value)) {
-      i(`${ctx.name} is not valid`);
+    if (pattern.test(ctx.value)) {
+      return;
     }
+
+    i(`${ctx.name} is not valid`);
   }
 };

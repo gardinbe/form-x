@@ -7,10 +7,10 @@ import { preset } from './preset';
 import { required } from './required';
 
 export const defaultValidators = {
-  'max-value': maxValue,
-  'max-length': maxLength,
-  'min-value': minValue,
-  'min-length': minLength,
+  maxValue,
+  maxLength,
+  minValue,
+  minLength,
   pattern,
   preset,
   required

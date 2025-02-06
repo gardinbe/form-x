@@ -1,8 +1,10 @@
+import './init';
+
 export {
+  type CheckRevoker,
   FXControl,
   type FXControlElement,
-  type FXMultiControlElement,
-  type Revoker
+  type FXMultiControlElement
 } from './control';
 
 export {
@@ -11,25 +13,23 @@ export {
 } from './form';
 
 export {
+  type FXFunction,
   type FXGlobal,
   fx
 } from './global';
 
 export {
-  type InvalidatorFunction,
+  type InvalidationFunction,
   type Validation,
   type ValidationContext,
   type ValidationContextAttributed,
   type ValidationContextStandalone,
-  type ValidationResult,
-  ValidationResultState,
+  ValidationState,
   Validator,
+  type ValidatorFunction,
   ValidatorPriority,
   type ValidatorSetup,
   type ValidatorSetupAttributed,
-  type ValidatorSetupFunction,
-  type ValidatorSetupFunctionAttributed,
-  type ValidatorSetupFunctionStandalone,
   type ValidatorSetupStandalone
 } from './validator';
 
