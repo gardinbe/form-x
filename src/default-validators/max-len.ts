@@ -1,8 +1,9 @@
-import { Validator, ValidatorPriority } from '../validator';
+import type { ValidatorSetupAttributed } from '../validator';
+import { ValidatorPriority } from '../validator';
 
-export const maxLength = new Validator({
+export const maxLength: ValidatorSetupAttributed = {
   name: 'max-length',
-  attribute: 'max-len',
+  attribute: 'fx-max-len',
   priority: ValidatorPriority.MEDIUM,
   fn: (i, ctx): void => {
     const maxLen = Number(ctx.attributeValue);
@@ -15,4 +16,4 @@ export const maxLength = new Validator({
       i(`${ctx.name} must have no more than ${maxLen} characters`);
     }
   }
-});
+};

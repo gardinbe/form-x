@@ -1,17 +1,13 @@
 export {
-  type ControlEl,
   FXControl,
-  type FXControlEl,
-  type FXMultiControlEl,
-  type MultiControlEl,
-  type Revoker,
-  type SingleControlEl
+  type FXControlElement,
+  type FXMultiControlElement,
+  type Revoker
 } from './control';
 
 export {
   FXForm,
-  type FXFormEl,
-  type FormEl
+  type FXFormElement
 } from './form';
 
 export {
@@ -24,7 +20,7 @@ export {
   type Validation,
   type ValidationContext,
   type ValidationContextAttributed,
-  type ValidationContextRaw,
+  type ValidationContextStandalone,
   type ValidationResult,
   ValidationResultState,
   Validator,
@@ -32,7 +28,9 @@ export {
   type ValidatorSetup,
   type ValidatorSetupAttributed,
   type ValidatorSetupFunction,
-  type ValidatorSetupRaw
+  type ValidatorSetupFunctionAttributed,
+  type ValidatorSetupFunctionStandalone,
+  type ValidatorSetupStandalone
 } from './validator';
 
 export {

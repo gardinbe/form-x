@@ -1,8 +1,9 @@
-import { Validator, ValidatorPriority } from '../validator';
+import type { ValidatorSetupAttributed } from '../validator';
+import { ValidatorPriority } from '../validator';
 
-export const pattern = new Validator({
+export const pattern: ValidatorSetupAttributed = {
   name: 'pattern',
-  attribute: 'pattern',
+  attribute: 'fx-pattern',
   priority: ValidatorPriority.LOW,
   fn: (i, ctx): void => {
     let pattern;
@@ -14,7 +15,7 @@ export const pattern = new Validator({
     }
 
     if (!pattern.test(ctx.value)) {
-      i(`${ctx.name} is not in a valid format`);
+      i(`${ctx.name} is not valid`);
     }
   }
-});
+};

@@ -3,6 +3,11 @@ export {
 } from './dom-ready';
 
 export {
+  type KeyedMap,
+  mergeMapsToArray
+} from './merge-maps';
+
+export {
   arrayify
 } from './arrayify';
 

@@ -1,46 +1,47 @@
+import { fx } from '../global';
 import { multiAttr } from '../utils';
-import { Validator, ValidatorPriority } from '../validator';
+import type { ValidatorSetupAttributed } from '../validator';
+import { ValidatorPriority } from '../validator';
 
-export interface PresetPattern {
+export interface Preset {
   name: string;
   pattern: RegExp;
   error(dname: string): string;
 }
 
-const presets: PresetPattern[] = [
-  {
+export const defaultPresets: Record<string, Preset> = {
+  email: {
     name: 'email',
     pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
     error: (dname) => `${dname} is not in a valid format`
   },
-  {
+  phone: {
     name: 'phone',
     pattern: /^[\s+()\d]*$/,
     error: (dname) => `${dname} is not in a valid format`
   }
-];
+};
 
-const getSelectedPresets = (attr: string): PresetPattern[] => {
+const getSelectedPresets = (attr: string): Preset[] => {
+  const presets = [...fx.presets.values()];
   return multiAttr(attr)
     .map((n) => presets.find((p) => p.name === n))
-    .filter((p): p is PresetPattern => {
+    .filter((p): p is Preset => {
       if (!p) {
-        throw new Error('Invalid pattern preset');
+        throw new Error('Invalid preset');
       }
 
       return true;
     });
 };
 
-export const presetPattern = new Validator({
-  name: 'preset-pattern',
-  attribute: 'preset-pattern',
+export const preset: ValidatorSetupAttributed = {
+  name: 'preset',
+  attribute: 'fx-preset',
   priority: ValidatorPriority.LOW,
   fn: (i, ctx): void => {
     const selectedPresets = getSelectedPresets(ctx.attributeValue);
-
     const valid = selectedPresets.every((preset) => preset.pattern.test(ctx.value));
-
     const reason = selectedPresets.length === 1
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       ? selectedPresets[0]!.error(ctx.name)
@@ -50,4 +51,4 @@ export const presetPattern = new Validator({
       i(reason);
     }
   }
-});
+};

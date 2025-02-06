@@ -1,8 +1,9 @@
-import { Validator, ValidatorPriority } from '../validator';
+import type { ValidatorSetupAttributed } from '../validator';
+import { ValidatorPriority } from '../validator';
 
-export const minLength = new Validator({
+export const minLength: ValidatorSetupAttributed = {
   name: 'min-length',
-  attribute: 'min-len',
+  attribute: 'fx-min-len',
   priority: ValidatorPriority.MEDIUM,
   fn: (i, ctx): void => {
     const minLen = Number(ctx.attributeValue);
@@ -15,4 +16,4 @@ export const minLength = new Validator({
       i(`${ctx.name} must have at least ${minLen} characters`);
     }
   }
-});
+};

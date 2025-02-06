@@ -4,45 +4,57 @@ import {
   attrErrorReason,
   attributeObserver,
   getAttr,
+  mergeMapsToArray,
   multiAttr,
   setAttr,
   truthyAttr
 } from './utils';
-import type { ValidatorSetupAttributed } from './validator';
+import type {
+  ValidatorSetup,
+  ValidatorSetupAttributed,
+  ValidatorSetupFunction,
+  ValidatorSetupFunctionAttributed,
+  ValidatorSetupFunctionStandalone,
+  ValidatorSetupStandalone
+} from './validator';
 import { ValidationResultState, Validator, ValidatorPriority } from './validator';
 
 export type Revoker = () => void;
 
-export type ControlEl =
-  | SingleControlEl
-  | MultiControlEl;
+declare global {
+  interface HTMLInputElement {
+    fx: FXControl<HTMLInputElement>;
+  }
 
-export type SingleControlEl =
+  interface HTMLTextAreaElement {
+    fx: FXControl<HTMLTextAreaElement>;
+  }
+
+  interface HTMLSelectElement {
+    fx: FXControl<HTMLSelectElement>;
+  }
+}
+
+export type FXControlElement =
   | HTMLInputElement
   | HTMLTextAreaElement
   | HTMLSelectElement;
 
-export type MultiControlEl = HTMLInputElement;
+export type FXMultiControlElement = HTMLInputElement;
 
-export type FXControlEl<E extends ControlEl = ControlEl> = E & {
-  fx: FXControl;
-};
-
-export type FXMultiControlEl<E extends MultiControlEl = MultiControlEl> = FXControlEl<E>;
-
-export class FXControl<E extends ControlEl = ControlEl> {
-  static has<E extends ControlEl>(node: Node): node is FXControlEl<E> {
+export class FXControl<E extends FXControlElement = FXControlElement> {
+  static has<E extends FXControlElement>(node: Node): node is E {
     return (
       'fx' in node
       && node.fx instanceof FXControl
     );
   }
 
-  static isMulti(control: FXControl): control is FXControl<FXMultiControlEl> {
+  static isMulti(control: FXControl): control is FXControl<FXMultiControlElement> {
     return FXControl.isMemberEl(control.el);
   }
 
-  static isEl(node: Node): node is ControlEl {
+  static isEl(node: Node): node is FXControlElement {
     return (
       node instanceof HTMLInputElement
       || node instanceof HTMLTextAreaElement
@@ -50,7 +62,7 @@ export class FXControl<E extends ControlEl = ControlEl> {
     );
   }
 
-  static isMemberEl(node: Node): node is MultiControlEl {
+  static isMemberEl(node: Node): node is FXMultiControlElement {
     return (
       node instanceof HTMLInputElement
       && (node.type === 'radio'
@@ -66,7 +78,7 @@ export class FXControl<E extends ControlEl = ControlEl> {
   #valid: boolean;
   #started: boolean;
 
-  readonly #validators: Map<string, Validator>;
+  readonly #validators: Map<string | symbol, Validator>;
   #revoker: Revoker | null;
 
   readonly #recurEvents: Set<string>;
@@ -80,7 +92,7 @@ export class FXControl<E extends ControlEl = ControlEl> {
   readonly #ao: MutationObserver;
 
   constructor(el: E) {
-    (el as FXControlEl<E>).fx = this;
+    el.fx = this as FXControl<HTMLInputElement>;
 
     this.el = el;
     this.memberEls = new Set([el]);
@@ -141,7 +153,7 @@ export class FXControl<E extends ControlEl = ControlEl> {
     return this.#errors;
   }
 
-  get validators(): ReadonlyMap<string, Validator> {
+  get validators(): ReadonlyMap<string | symbol, Validator> {
     return this.#validators;
   }
 
@@ -170,7 +182,7 @@ export class FXControl<E extends ControlEl = ControlEl> {
 
     let invalidated = false as boolean;
 
-    const validators = this.#getValidators();
+    const validators = mergeMapsToArray(fx.validators, this.#validators);
 
     const exec = async (priority: ValidatorPriority): Promise<boolean> => {
       const prioritizedValidators = validators
@@ -234,10 +246,10 @@ export class FXControl<E extends ControlEl = ControlEl> {
     this.#errors.add(reason);
 
     for (const el of this.#getErrorEls()) {
-      const li = document.createElement('li');
-      li.textContent = reason;
-
-      el.appendChild(li);
+      el.insertAdjacentHTML(
+        'beforeend',
+        fx.errorHtmlTemplate(reason)
+      );
     }
   }
 
@@ -256,24 +268,29 @@ export class FXControl<E extends ControlEl = ControlEl> {
     }
   }
 
-  addValidator(validator: Validator | ValidatorSetupAttributed): void {
+  addValidator(fn: ValidatorSetupFunctionAttributed): void;
+  // eslint-disable-next-line @typescript-eslint/unified-signatures
+  addValidator(fn: ValidatorSetupFunctionStandalone): void;
+  addValidator(setup: ValidatorSetupAttributed): void;
+  // eslint-disable-next-line @typescript-eslint/unified-signatures
+  addValidator(setup: ValidatorSetupStandalone): void;
+  addValidator(validator: Validator): void;
+  addValidator(validator: ValidatorSetupFunction | ValidatorSetup | Validator): void {
     const v = validator instanceof Validator
       ? validator
-      : new Validator(validator);
+      : new Validator(validator as ValidatorSetupAttributed);
 
     this.#validators.set(v.name, v);
   }
 
-  removeValidator(validator: Validator | string): void {
+  removeValidator(name: string): void;
+  removeValidator(validator: Validator): void;
+  removeValidator(validator: string | Validator): void {
     const name = validator instanceof Validator
       ? validator.name
       : validator;
 
     this.#validators.delete(name);
-  }
-
-  #getValidators(): Validator[] {
-    return [...new Map([...fx.validators, ...this.#validators]).values()];
   }
 
   #start(): void {
@@ -368,7 +385,7 @@ export class FXControl<E extends ControlEl = ControlEl> {
         this.#listenStart();
       }
     } else if (
-      this.#getValidators()
+      mergeMapsToArray(fx.validators, this.#validators)
         .flatMap((v) => arrayify(v.attributes))
         .flatMap((a) => a
           ? [a, attrErrorReason(a)]

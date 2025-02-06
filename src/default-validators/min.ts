@@ -1,8 +1,9 @@
-import { Validator, ValidatorPriority } from '../validator';
+import type { ValidatorSetupAttributed } from '../validator';
+import { ValidatorPriority } from '../validator';
 
-export const minValue = new Validator({
+export const minValue: ValidatorSetupAttributed = {
   name: 'min-value',
-  attribute: 'min',
+  attribute: 'fx-min',
   priority: ValidatorPriority.MEDIUM,
   fn: (i, ctx): void => {
     const min = Number(ctx.attributeValue);
@@ -20,7 +21,7 @@ export const minValue = new Validator({
       isNaN(val)
       || val < min
     ) {
-      i(`${ctx.name} must be a number greater than or equal to ${min}`);
+      i(`${ctx.name} must be greater than or equal to ${min}`);
     }
   }
-});
+};

@@ -17,16 +17,16 @@ export type Validation =
 // context
 
 export type ValidationContext =
-  | ValidationContextRaw
+  | ValidationContextStandalone
   | ValidationContextAttributed;
 
-export interface ValidationContextRaw {
+export interface ValidationContextStandalone {
   name: string;
   value: string;
   control: FXControl;
 }
 
-export interface ValidationContextAttributed extends ValidationContextRaw {
+export interface ValidationContextAttributed extends ValidationContextStandalone {
   attributeValue: string;
 }
 
@@ -40,48 +40,70 @@ export const enum ValidatorPriority {
 
 export type InvalidatorFunction = (reason: string) => void;
 
-export type ValidatorSetupFunction<C extends ValidationContextRaw = ValidationContextRaw> = (
+export type ValidatorSetupFunction =
+  | ValidatorSetupFunctionStandalone
+  | ValidatorSetupFunctionAttributed;
+
+export type ValidatorSetupFunctionStandalone<
+  C extends ValidationContextStandalone = ValidationContextStandalone
+> = (
   invalidate: InvalidatorFunction,
   ctx: C
 ) => void | Promise<void>;
 
+export type ValidatorSetupFunctionAttributed = ValidatorSetupFunctionStandalone<
+  ValidationContextAttributed
+>;
+
 export type ValidatorSetup =
-  | ValidatorSetupRaw
+  | ValidatorSetupStandalone
   | ValidatorSetupAttributed;
 
-export interface ValidatorSetupRaw<C extends ValidationContextRaw = ValidationContextRaw> {
+export interface ValidatorSetupStandalone<
+  C extends ValidationContextStandalone = ValidationContextStandalone
+> {
   name: string;
   priority?: ValidatorPriority;
-  fn: ValidatorSetupFunction<C>;
+  fn: ValidatorSetupFunctionStandalone<C>;
 }
 
-export interface ValidatorSetupAttributed extends ValidatorSetupRaw<ValidationContextAttributed> {
+export interface ValidatorSetupAttributed extends
+  ValidatorSetupStandalone<ValidationContextAttributed> {
   attribute: string | string[];
 }
 
 export class Validator {
-  readonly name: string;
+  readonly name: string | symbol;
   readonly priority: ValidatorPriority;
   readonly attributes: string[] | null;
-  readonly #fn: ValidatorSetupFunction;
+  readonly #fn: ValidatorSetupFunctionStandalone;
 
+  constructor(fn: ValidatorSetupFunctionAttributed);
+  // eslint-disable-next-line @typescript-eslint/unified-signatures
+  constructor(fn: ValidatorSetupFunctionStandalone);
   constructor(setup: ValidatorSetupAttributed);
   // eslint-disable-next-line @typescript-eslint/unified-signatures
-  constructor(setup: ValidatorSetupRaw);
-  constructor(setup: ValidatorSetup) {
-    this.name = setup.name;
-    this.priority = setup.priority ?? ValidatorPriority.LOW;
-
-    this.attributes = 'attribute' in setup
-      ? arrayify(setup.attribute).map((a) => `fx-${a}`)
-      : null;
-
-    this.#fn = async (invalidate, ctx): Promise<void> =>
-      setup.fn(invalidate, ctx as ValidationContextAttributed);
+  constructor(setup: ValidatorSetupStandalone);
+  constructor(setup: ValidatorSetupFunction | ValidatorSetup) {
+    if (typeof setup === 'function') {
+      this.name = Symbol(); // TODO: hack
+      this.priority = ValidatorPriority.LOW;
+      this.attributes = null;
+      this.#fn = async (invalidate, ctx): Promise<void> =>
+        setup(invalidate, ctx as ValidationContextAttributed);
+    } else {
+      this.name = setup.name;
+      this.priority = setup.priority ?? ValidatorPriority.LOW;
+      this.attributes = 'attribute' in setup
+        ? arrayify(setup.attribute)
+        : null;
+      this.#fn = async (invalidate, ctx): Promise<void> =>
+        setup.fn(invalidate, ctx as ValidationContextAttributed);
+    }
   }
 
   async exec(control: FXControl): Promise<Validation> {
-    const ctx: ValidationContextRaw = {
+    const ctx: ValidationContextStandalone = {
       name: control.name,
       value: control.el.value,
       control

@@ -1,21 +1,23 @@
 import { FXControl } from './control';
 import { getAttr, setAttr, truthyAttr } from './utils';
 
-export type FormEl = HTMLFormElement;
+declare global {
+  interface HTMLFormElement {
+    fx: FXForm;
+  }
+}
 
-export type FXFormEl = FormEl & {
-  fx: FXForm;
-};
+export type FXFormElement = HTMLFormElement;
 
 export class FXForm {
-  static has(node: Node): node is FXFormEl {
+  static has(node: Node): node is FXFormElement {
     return (
       'fx' in node
       && node.fx instanceof FXForm
     );
   }
 
-  static isEl(node: Node): node is FormEl {
+  static isEl(node: Node): node is FXFormElement {
     return node instanceof HTMLFormElement;
   }
 
@@ -25,7 +27,7 @@ export class FXForm {
 
   readonly #submitHandler: (ev: SubmitEvent) => void;
 
-  constructor(form: FormEl) {
+  constructor(form: FXFormElement) {
     form.fx = this;
     form.noValidate = true;
 

@@ -1,8 +1,9 @@
-import { Validator, ValidatorPriority } from '../validator';
+import type { ValidatorSetupAttributed } from '../validator';
+import { ValidatorPriority } from '../validator';
 
-export const maxValue = new Validator({
+export const maxValue: ValidatorSetupAttributed = {
   name: 'max-value',
-  attribute: 'max',
+  attribute: 'fx-max',
   priority: ValidatorPriority.MEDIUM,
   fn: (i, ctx): void => {
     const max = Number(ctx.attributeValue);
@@ -20,7 +21,7 @@ export const maxValue = new Validator({
       isNaN(val)
       || val > max
     ) {
-      i(`${ctx.name} must be a number less than or equal to ${max}`);
+      i(`${ctx.name} must be less than or equal to ${max}`);
     }
   }
-});
+};

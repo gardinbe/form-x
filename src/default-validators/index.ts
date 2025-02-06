@@ -3,15 +3,15 @@ import { maxLength } from './max-len';
 import { minValue } from './min';
 import { minLength } from './min-len';
 import { pattern } from './pattern';
-import { presetPattern } from './preset-pattern';
+import { preset } from './preset';
 import { required } from './required';
 
 export const defaultValidators = {
-  maxValue,
-  maxLength,
-  minValue,
-  minLength,
+  'max-value': maxValue,
+  'max-length': maxLength,
+  'min-value': minValue,
+  'min-length': minLength,
   pattern,
-  presetPattern,
+  preset,
   required
-};
+} as const;

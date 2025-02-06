@@ -1,10 +1,11 @@
 import { FXControl } from '../control';
 import { truthyAttr } from '../utils';
-import { Validator, ValidatorPriority } from '../validator';
+import type { ValidatorSetupAttributed } from '../validator';
+import { ValidatorPriority } from '../validator';
 
-export const required = new Validator({
+export const required: ValidatorSetupAttributed = {
   name: 'required',
-  attribute: 'required',
+  attribute: 'fx-required',
   priority: ValidatorPriority.HIGH,
   fn: (i, ctx): void => {
     if (!truthyAttr(ctx.attributeValue)) {
@@ -20,4 +21,4 @@ export const required = new Validator({
       i(`${ctx.name} is required`);
     }
   }
-});
+};

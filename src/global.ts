@@ -1,43 +1,59 @@
-import type { ControlEl, FXControlEl, FXMultiControlEl, MultiControlEl } from './control';
+import type { FXControlElement, FXMultiControlElement } from './control';
 import { FXControl } from './control';
 import { defaultValidators } from './default-validators';
-import type { FormEl, FXFormEl } from './form';
+import type { Preset } from './default-validators/preset';
+import { defaultPresets } from './default-validators/preset';
+import type { FXFormElement } from './form';
 import { FXForm } from './form';
 import { childObserver, DOMReady, sanitizeAttrQuery } from './utils';
-import type { ValidatorSetup, ValidatorSetupAttributed, ValidatorSetupRaw } from './validator';
+import type {
+  ValidatorSetup,
+  ValidatorSetupAttributed,
+  ValidatorSetupStandalone
+} from './validator';
 import { Validator } from './validator';
 
 export interface FXGlobal {
-  readonly forms: WeakMap<FormEl, FXForm>;
-  readonly controls: WeakMap<ControlEl, FXControl>;
+  readonly forms: WeakMap<FXFormElement, FXForm>;
+  readonly controls: WeakMap<FXControlElement, FXControl>;
   readonly observer: MutationObserver;
-  readonly validators: ReadonlyMap<string, Validator>;
-  addValidator(validator: Validator): void;
+
+  readonly validators: ReadonlyMap<string | symbol, Validator>;
   addValidator(setup: ValidatorSetupAttributed): void;
   // eslint-disable-next-line @typescript-eslint/unified-signatures
-  addValidator(setup: ValidatorSetupRaw): void;
-  removeValidator(validator: Validator): void;
+  addValidator(setup: ValidatorSetupStandalone): void;
+  addValidator(validator: Validator): void;
   removeValidator(name: string): void;
+  removeValidator(validator: Validator): void;
+
+  readonly presets: ReadonlyMap<string, Preset>;
+  addPreset(preset: Preset): void;
+  removePreset(name: string): void;
+  removePreset(preset: Preset): void;
+
+  errorHtmlTemplate(reason: string): string;
 }
 
+// forms and controls
+
 const
-  forms: WeakMap<FormEl, FXForm> = new WeakMap(),
-  controls: WeakMap<ControlEl, FXControl> = new WeakMap();
+  forms: WeakMap<FXFormElement, FXForm> = new WeakMap(),
+  controls: WeakMap<FXControlElement, FXControl> = new WeakMap();
 
 /**
  * Creates a new `FXForm` instance for the given `FormElement`.
  * @param el - The `FormElement` to create a `FXForm` instance for.
  */
-const createForm = (el: FormEl): void => {
-  (el as FXFormEl).fx = new FXForm(el);
-  forms.set(el, (el as FXFormEl).fx);
+const createForm = (el: FXFormElement): void => {
+  el.fx = new FXForm(el);
+  forms.set(el, el.fx);
 };
 
 /**
  * Destroys the `FXForm` instance for the given `FormElement`.
  * @param el - The `FormElement` to destroy the `FXForm` instance for.
  */
-const destroyForm = (el: FXFormEl): void => {
+const destroyForm = (el: FXFormElement): void => {
   el.fx.destroy();
   forms.delete(el);
 };
@@ -46,38 +62,38 @@ const destroyForm = (el: FXFormEl): void => {
  * Creates a new `FXControl` instance for the given `ControlElement`.
  * @param el - The `ControlElement` to create a `FXControl` instance for.
  */
-const createControl = (el: ControlEl): void => {
+const createControl = (el: FXControlElement): void => {
   if (FXControl.isMemberEl(el)) {
     const els = [
       ...el.form
-        ? el.form.elements as HTMLCollectionOf<MultiControlEl>
-        : document.querySelectorAll<MultiControlEl>(
+        ? el.form.elements as HTMLCollectionOf<FXMultiControlElement>
+        : document.querySelectorAll<FXMultiControlElement>(
           `[type='${sanitizeAttrQuery(el.type)}'][name='${sanitizeAttrQuery(el.name)}']`
         )
     ];
 
     const control = els
-      .find((el): el is FXMultiControlEl =>
+      .find((el): el is FXMultiControlElement =>
         el.name === el.name
         && FXControl.has(el))
       ?.fx;
 
     if (control) {
-      (el as FXMultiControlEl).fx = control;
+      el.fx = control;
       control.memberEls.add(el);
       return;
     }
   }
 
-  (el as FXControlEl).fx = new FXControl(el);
-  controls.set(el, (el as FXControlEl).fx);
+  el.fx = new FXControl(el as HTMLInputElement);
+  controls.set(el, el.fx);
 };
 
 /**
  * Destroys the `FXControl` instance for the given `ControlElement`.
  * @param el - The `ControlElement` to destroy the `FXControl` instance for.
  */
-const destroyControl = (el: FXControlEl): void => {
+const destroyControl = (el: FXControlElement): void => {
   if (
     FXControl.isMemberEl(el)
     && el !== el.fx.el
@@ -90,7 +106,7 @@ const destroyControl = (el: FXControlEl): void => {
 };
 
 const init = (): void => {
-  const formEls = document.querySelectorAll<FormEl>(
+  const formEls = document.querySelectorAll<FXFormElement>(
     'form'
   );
 
@@ -98,7 +114,7 @@ const init = (): void => {
     createForm(el);
   }
 
-  const controlEls = document.querySelectorAll<ControlEl>(
+  const controlEls = document.querySelectorAll<FXControlElement>(
     'input, textarea, select'
   );
 
@@ -127,26 +143,52 @@ const observer = childObserver(document.body, ([removed, added]) => {
   }
 });
 
-const validators: Map<string, Validator> = new Map(
+// validators
+
+const validators: Map<string | symbol, Validator> = new Map(
   Object
     .values(defaultValidators)
-    .map((v) => [v.name, v])
+    .map((v) => [v.name, new Validator(v)])
 );
 
-const addValidator = (validator: Validator | ValidatorSetup): void => {
+const addValidator = (validator: ValidatorSetup | Validator): void => {
   const _validator = validator instanceof Validator
     ? validator
-    : new Validator(validator as ValidatorSetupRaw);
+    : new Validator(validator as ValidatorSetupAttributed);
 
   validators.set(_validator.name, _validator);
 };
 
-const removeValidator = (validator: Validator | string): void => {
+const removeValidator = (validator: string | Validator): void => {
   const name = typeof validator === 'string'
     ? validator
     : validator.name;
 
   validators.delete(name);
+};
+
+// presets
+
+const presets: Map<string, Preset> = new Map(
+  Object.entries(defaultPresets)
+);
+
+const addPreset = (preset: Preset): void => {
+  presets.set(preset.name, preset);
+};
+
+const removePreset = (preset: Preset | string): void => {
+  const name = typeof preset === 'string'
+    ? preset
+    : preset.name;
+
+  presets.delete(name);
+};
+
+// templates
+
+const errorHtmlTemplate = (reason: string): string => {
+  return /* html */`<li>${reason}</li>`;
 };
 
 export const fx: FXGlobal = {
@@ -155,7 +197,11 @@ export const fx: FXGlobal = {
   observer,
   validators,
   addValidator,
-  removeValidator
+  removeValidator,
+  presets,
+  addPreset,
+  removePreset,
+  errorHtmlTemplate
 };
 
 declare global {

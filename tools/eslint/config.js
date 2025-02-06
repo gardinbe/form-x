@@ -242,7 +242,12 @@ export default [
           }
         }
       ],
-      '@stylistic/object-property-newline': 'error',
+      '@stylistic/object-property-newline': [
+        'error',
+        {
+          allowAllPropertiesOnSameLine: true
+        }
+      ],
       '@stylistic/padding-line-between-statements': [
         'error',
         {

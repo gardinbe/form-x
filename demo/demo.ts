@@ -1,18 +1,16 @@
 /* eslint-disable */
 
-import { fx } from '../src';
+import '../src';
 
 // example
 
-fx.addValidator({
-  name: 'username-is-cool',
-  attribute: 'username-is-cool',
-  async fn(i, ctx) {
-    const result = await checkUsername(ctx.value);
+const username = document.querySelector<HTMLInputElement>('#username')!;
 
-    if (!result.valid) {
-      i(`${ctx.name} is not cool`);
-    }
+username.fx.addValidator(async (i, ctx) => {
+  const result = await checkUsername(ctx.value);
+
+  if (!result.valid) {
+    i(`${ctx.name} is not cool`);
   }
 });
 
