@@ -1,34 +1,40 @@
-import './init';
-
-export * as validators from './validators';
-
-export type {
-  FXConfig
-} from './config';
-
 export {
+  type ControlEl,
   FXControl,
-  type FXControlElement,
-  type FXMultiControlElement,
-  type Revoker
-} from './control/control';
+  type FXControlEl,
+  type FXMultiControlEl,
+  type MultiControlEl,
+  type Revoker,
+  type SingleControlEl
+} from './control';
 
 export {
   FXForm,
-  type FXFormElement
-} from './form/form';
+  type FXFormEl,
+  type FormEl
+} from './form';
 
 export {
-  type Result,
-  ResultState,
-  type ValidateFunction,
+  type FXGlobal,
+  fx
+} from './global';
+
+export {
+  type InvalidatorFunction,
   type Validation,
   type ValidationContext,
+  type ValidationContextAttributed,
+  type ValidationContextRaw,
+  type ValidationResult,
+  ValidationResultState,
   Validator,
   ValidatorPriority,
-  type ValidatorSetup
-} from './validator/validator';
+  type ValidatorSetup,
+  type ValidatorSetupAttributed,
+  type ValidatorSetupFunction,
+  type ValidatorSetupRaw
+} from './validator';
 
 export {
-  fx
-} from './config';
+  defaultValidators
+} from './default-validators';

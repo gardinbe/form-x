@@ -159,7 +159,7 @@ export default [
       '@stylistic/array-element-newline': [
         'error',
         {
-          ArrayExpression: 'always',
+          ArrayExpression: 'consistent',
           ArrayPattern: { minItems: 3 } // tuples
         }
       ],
@@ -222,6 +222,7 @@ export default [
         }
       ],
       '@stylistic/newline-per-chained-call': 'off',
+      '@stylistic/no-extra-parens': 'error',
       '@stylistic/no-extra-semi': 'error',
       '@stylistic/no-tabs': 'off',
       '@stylistic/nonblock-statement-body-position': [
@@ -266,6 +267,7 @@ export default [
 
       // Typescript ESLint
 
+      '@typescript-eslint/explicit-function-return-type': 'error',
       '@typescript-eslint/no-non-null-assertion': 'warn',
       '@typescript-eslint/no-unnecessary-type-parameters': 'off',
       '@typescript-eslint/promise-function-async': 'error',

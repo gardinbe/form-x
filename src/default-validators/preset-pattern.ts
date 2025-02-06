@@ -1,10 +1,10 @@
 import { multiAttr } from '../utils';
-import { Validator, ValidatorPriority } from '../validator/validator';
+import { Validator, ValidatorPriority } from '../validator';
 
 export interface PresetPattern {
   name: string;
   pattern: RegExp;
-  error: (dname: string) => string;
+  error(dname: string): string;
 }
 
 const presets: PresetPattern[] = [
@@ -20,40 +20,34 @@ const presets: PresetPattern[] = [
   }
 ];
 
-const getSelectedPresets = (attr: string): PresetPattern[] =>
-  multiAttr(attr)
-    .map((name) => presets
-      .find((preset) => preset.name === name))
-    .filter((preset): preset is PresetPattern => {
-      if (!preset) {
+const getSelectedPresets = (attr: string): PresetPattern[] => {
+  return multiAttr(attr)
+    .map((n) => presets.find((p) => p.name === n))
+    .filter((p): p is PresetPattern => {
+      if (!p) {
         throw new Error('Invalid pattern preset');
       }
 
       return true;
     });
+};
 
 export const presetPattern = new Validator({
   name: 'preset-pattern',
   attribute: 'preset-pattern',
   priority: ValidatorPriority.LOW,
-  validate: ({ value, attr, control }) => {
-    const selectedPresets = getSelectedPresets(attr);
+  fn: (i, ctx): void => {
+    const selectedPresets = getSelectedPresets(ctx.attributeValue);
 
-    const valid = selectedPresets
-      .every((preset) => preset.pattern.test(value));
+    const valid = selectedPresets.every((preset) => preset.pattern.test(ctx.value));
 
     const reason = selectedPresets.length === 1
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      ? selectedPresets[0]!.error(control.name)
-      : `${control.name} is not in a valid format`;
+      ? selectedPresets[0]!.error(ctx.name)
+      : `${ctx.name} is not in a valid format`;
 
     if (!valid) {
-      return [
-        false,
-        reason
-      ];
+      i(reason);
     }
-
-    return [true];
   }
 });

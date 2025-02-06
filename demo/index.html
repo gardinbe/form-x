@@ -25,7 +25,7 @@
     }
   </style>
 
-  <form fx-form>
+  <form fx-validate>
 
     <fieldset>
       <label for="email">
@@ -33,16 +33,16 @@
       </label>
       <input
         type="text"
+        id="email"
         name="email"
         fx-validate
+        fx-on:start="blur"
         fx-on="input"
         fx-label="Email"
         fx-required
-        fx-required-fail="Please enter an email address"
+        fx-required:error="Please enter an email address"
         fx-preset-pattern="email"
-        fx-preset-pattern-fail="This is not a valid email address"
-        fx-is-cool
-        fx-is-cool-fail="This email is not cool enough (include the word 'cool' in the email address)"
+        fx-preset-pattern:error="This is not a valid email address"
       />
       <ul fx-errors-for="email"></ul>
     </fieldset>
@@ -53,16 +53,17 @@
       </label>
       <input
         type="text"
+        id="username"
         name="username"
         autocomplete="username"
         fx-validate
         fx-on="input"
         fx-label="Username"
         fx-required
-        fx-required-fail="Please enter a username"
+        fx-required:error="Please enter a username"
         fx-min-len="3"
-        fx-is-cool
-        fx-is-cool-fail="This username is not cool enough (include the word 'cool' in your username)"
+        fx-username-is-cool
+        fx-username-is-cool:error="This username is not cool enough (include the word 'cool' in your username)"
       />
       <ul fx-errors-for="username"></ul>
     </fieldset>
@@ -73,15 +74,16 @@
       </label>
       <input
         type="password"
+        id="password"
         name="password"
         autocomplete="new-password"
         fx-validate
         fx-on="input"
         fx-label="Password"
         fx-required
-        fx-required-fail="Please enter a password"
+        fx-required:error="Please enter a password"
         fx-min-len="6"
-        fx-min-len-fail="Password must be at least 6 characters"
+        fx-min-len:error="Password must be at least 6 characters"
       />
       <ul fx-errors-for="password"></ul>
     </fieldset>
@@ -92,6 +94,7 @@
       </label>
       <input
         type="number"
+        id="age"
         name="age"
         min="0"
         max="100"
@@ -99,11 +102,11 @@
         fx-on="input"
         fx-label="Age"
         fx-required
-        fx-required-fail="Please enter an age"
+        fx-required:error="Please enter an age"
         fx-min="0"
-        fx-min-fail="Age must be greater than 0"
+        fx-min:error="Age must be greater than 0"
         fx-max="100"
-        fx-max-fail="Age must be less than 100"
+        fx-max:error="Age must be less than 100"
       />
       <ul fx-errors-for="age"></ul>
     </fieldset>
@@ -121,7 +124,7 @@
           fx-on="change"
           fx-label="Gender"
           fx-required
-          fx-required-fail="Please select a gender"
+          fx-required:error="Please select a gender"
         />
         Male
       </label>
@@ -149,12 +152,13 @@
         Occupation:
       </label>
       <select
+        id="occupation"
         name="occupation"
         fx-validate
         fx-on="change"
         fx-label="Occupation"
         fx-required
-        fx-required-fail="Please select an occupation"
+        fx-required:error="Please select an occupation"
       >
         <option value="">Select an occupation</option>
         <option value="student">Student</option>

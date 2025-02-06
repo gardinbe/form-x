@@ -1,16 +1,26 @@
 export {
+  DOMReady
+} from './dom-ready';
+
+export {
   arrayify
 } from './arrayify';
 
 export {
-  attrFailReason,
+  attrErrorReason,
   getAttr,
   multiAttr,
+  sanitizeAttrQuery,
   setAttr,
   truthyAttr
-} from './attr';
+} from './attribute';
 
 export {
-  attrWatcher,
-  childWatcher
-} from './watch';
+  attributeObserver,
+  childObserver
+} from './observer';
+
+export {
+  flattenEl,
+  flattenNodes
+} from './flatten';
