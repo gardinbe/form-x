@@ -11,7 +11,9 @@
   "main": "./dist/form-x.es.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "readme.md",
+    "license"
   ],
   "exports": {
     ".": {
