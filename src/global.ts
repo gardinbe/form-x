@@ -192,8 +192,9 @@ const destroyControl = (el: FXControlElement): void => {
     control.members.delete(el);
   } else {
     control.destroy();
-    controls.delete(el);
   }
+
+  controls.delete(el);
 };
 
 const observer = childObserver(document.body, ([removed, added]) => {
