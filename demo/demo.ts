@@ -7,6 +7,8 @@ import { fx } from  '../src';
 fx.errorHtmlTemplate = (r: string): string =>
   `<li style='color: red;'>${r}</li>`;
 
+// username validator
+
 const uname = document.querySelector<HTMLInputElement>('#username')!;
 
 fx(uname).add(async (i, ctx) => {

@@ -3,7 +3,7 @@ import { ValidatorPriority } from '../validator';
 
 export const maxValue: ValidatorSetupAttributed = {
   name: 'max-value',
-  attribute: 'fx-max',
+  attribute: 'max',
   priority: ValidatorPriority.MEDIUM,
   fn: (i, ctx): void => {
     const max = Number(ctx.attributeValue);

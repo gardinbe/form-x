@@ -37,7 +37,7 @@ const getSelectedPresets = (attr: string): Preset[] => {
 
 export const preset: ValidatorSetupAttributed = {
   name: 'preset',
-  attribute: 'fx-preset',
+  attribute: 'preset',
   priority: ValidatorPriority.LOW,
   fn: (i, ctx): void => {
     const selectedPresets = getSelectedPresets(ctx.attributeValue);

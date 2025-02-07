@@ -5,7 +5,7 @@ import { ValidatorPriority } from '../validator';
 
 export const required: ValidatorSetupAttributed = {
   name: 'required',
-  attribute: 'fx-required',
+  attribute: 'required',
   priority: ValidatorPriority.HIGH,
   fn: (i, ctx): void => {
     if (!truthyAttr(ctx.attributeValue)) {

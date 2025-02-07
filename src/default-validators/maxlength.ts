@@ -3,7 +3,7 @@ import { ValidatorPriority } from '../validator';
 
 export const maxLength: ValidatorSetupAttributed = {
   name: 'max-length',
-  attribute: 'fx-max-len',
+  attribute: 'maxlength',
   priority: ValidatorPriority.MEDIUM,
   fn: (i, ctx): void => {
     const maxLen = Number(ctx.attributeValue);

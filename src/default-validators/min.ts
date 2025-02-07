@@ -3,7 +3,7 @@ import { ValidatorPriority } from '../validator';
 
 export const minValue: ValidatorSetupAttributed = {
   name: 'min-value',
-  attribute: 'fx-min',
+  attribute: 'min',
   priority: ValidatorPriority.MEDIUM,
   fn: (i, ctx): void => {
     const min = Number(ctx.attributeValue);

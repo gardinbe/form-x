@@ -83,17 +83,17 @@ export interface ValidatorSetupStandalone<
    * The available priorities are:
    *
    * **Low (0)** - Ran after all other validators.
-   * - `fx-pattern`
-   * - `fx-preset`
+   * - `pattern`
+   * - `preset`
    *
    * **Medium (1)** - Ran after high priority validators.
-   * - `fx-min-len`
-   * - `fx-max-len`
-   * - `fx-min`
-   * - `fx-max`
+   * - `minlength`
+   * - `maxlength`
+   * - `min`
+   * - `max`
    *
    * **High (2)** - Ran first.
-   * - `fx-required`
+   * - `required`
    *
    * @default 0 // ValidatorPriority.LOW
    */

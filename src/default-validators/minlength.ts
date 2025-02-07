@@ -3,7 +3,7 @@ import { ValidatorPriority } from '../validator';
 
 export const minLength: ValidatorSetupAttributed = {
   name: 'min-length',
-  attribute: 'fx-min-len',
+  attribute: 'minlength',
   priority: ValidatorPriority.MEDIUM,
   fn: (i, ctx): void => {
     const minLen = Number(ctx.attributeValue);

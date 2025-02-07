@@ -1,7 +1,7 @@
 import { maxValue } from './max';
-import { maxLength } from './max-len';
+import { maxLength } from './maxlength';
 import { minValue } from './min';
-import { minLength } from './min-len';
+import { minLength } from './minlength';
 import { pattern } from './pattern';
 import { preset } from './preset';
 import { required } from './required';

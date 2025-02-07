@@ -3,7 +3,7 @@ import { ValidatorPriority } from '../validator';
 
 export const pattern: ValidatorSetupAttributed = {
   name: 'pattern',
-  attribute: 'fx-pattern',
+  attribute: 'pattern',
   priority: ValidatorPriority.LOW,
   fn: (i, ctx): void => {
     let pattern;
