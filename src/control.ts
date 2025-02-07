@@ -123,7 +123,7 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
     // handle starting events
 
     this.#startEvents = new Set(
-      multiAttr(getAttr(el, 'fx-on:start'))
+      multiAttr(getAttr(el, 'fx-start-on'))
     );
 
     this.#startHandler = (): void => {
@@ -274,7 +274,7 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
 
     this.#errors.add(reason);
 
-    for (const el of this.#getErrorEls()) {
+    for (const el of this.#errorEls) {
       el.insertAdjacentHTML(
         'beforeend',
         fx.errorHtmlTemplate(reason)
@@ -377,17 +377,10 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
     this.setValid();
   }
 
-  #getErrorEls(): NodeListOf<Element> {
-    const contextEl = this.el.form ?? document.body;
-    return contextEl.querySelectorAll(
-      `[fx-errors-for='${this.el.name}']`
-    );
-  }
-
   #removeErrors(): void {
     this.#errors.clear();
 
-    for (const el of this.#getErrorEls()) {
+    for (const el of this.#errorEls) {
       el.replaceChildren();
     }
   }
@@ -458,7 +451,7 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
       if (listening) {
         this.#listenRecur();
       }
-    } else if (attr === 'fx-on:start') {
+    } else if (attr === 'fx-start-on') {
       const listening = this.#listeningStart;
 
       if (listening) {
@@ -466,7 +459,7 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
       }
 
       this.#startEvents.clear();
-      const events = multiAttr(getAttr(this.el, 'fx-on:start'));
+      const events = multiAttr(getAttr(this.el, 'fx-start-on'));
 
       for (const event of events) {
         this.#startEvents.add(event);
@@ -497,6 +490,13 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
    */
   get name(): string {
     return getAttr(this.el, 'fx-name') ?? 'Field';
+  }
+
+  get #errorEls(): NodeListOf<Element> {
+    const contextEl = this.el.form ?? document.body;
+    return contextEl.querySelectorAll(
+      `[fx-errors='${this.el.name}']`
+    );
   }
 
   get #disabled(): boolean {

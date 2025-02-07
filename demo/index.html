@@ -23,10 +23,13 @@
     [fx-checking=true] {
       background: gray;
     }
+
+    form[fx-checking=true] [fx-errors] {
+      display: none;
+    }
   </style>
 
   <form fx-validate>
-
     <fieldset>
       <label for="email">
         Email address:
@@ -36,7 +39,7 @@
         id="email"
         name="email"
         fx-validate
-        fx-on:start="blur"
+        fx-start-on="blur"
         fx-on="input"
         fx-label="Email"
         fx-required
@@ -44,7 +47,7 @@
         fx-preset="email"
         fx-preset:error="This is not a valid email address"
       />
-      <ul fx-errors-for="email"></ul>
+      <ul fx-errors="email"></ul>
     </fieldset>
 
     <fieldset>
@@ -63,7 +66,7 @@
         fx-required:error="Please enter a username"
         fx-min-len="3"
       />
-      <ul fx-errors-for="username"></ul>
+      <ul fx-errors="username"></ul>
     </fieldset>
 
     <fieldset>
@@ -83,7 +86,7 @@
         fx-min-len="6"
         fx-min-len:error="Password must be at least 6 characters"
       />
-      <ul fx-errors-for="password"></ul>
+      <ul fx-errors="password"></ul>
     </fieldset>
 
     <fieldset>
@@ -106,7 +109,7 @@
         fx-max="100"
         fx-max:error="Age must be less than 100"
       />
-      <ul fx-errors-for="age"></ul>
+      <ul fx-errors="age"></ul>
     </fieldset>
 
     <fieldset>
@@ -142,7 +145,7 @@
         />
         Other
       </label>
-      <ul fx-errors-for="gender"></ul>
+      <ul fx-errors="gender"></ul>
     </fieldset>
 
     <fieldset>
@@ -163,7 +166,7 @@
         <option value="teacher">Teacher</option>
         <option value="other">Other</option>
       </select>
-      <ul fx-errors-for="occupation"></ul>
+      <ul fx-errors="occupation"></ul>
     </fieldset>
 
     <button type="submit">

@@ -95,7 +95,7 @@ export interface ValidatorSetupStandalone<
    * **High (2)** - Ran first.
    * - `fx-required`
    *
-   * @default 1 // ValidatorPriority.MEDIUM
+   * @default 0 // ValidatorPriority.LOW
    */
   priority?: ValidatorPriority;
 
