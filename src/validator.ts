@@ -1,18 +1,14 @@
 import type { FXControl } from './control';
 import { arrayify, attrErrorReason, getAttr } from './utils';
 
-export type ValidationResult =
-  | [true, null?]
-  | [false, string];
-
-export const enum ValidationResultState {
+export const enum ValidationState {
   PASS,
   FAIL
 }
 
 export type Validation =
-  | [ValidationResultState.PASS, null]
-  | [ValidationResultState.FAIL, string];
+  | [ValidationState.PASS, null]
+  | [ValidationState.FAIL, string];
 
 // context
 
@@ -21,12 +17,26 @@ export type ValidationContext =
   | ValidationContextAttributed;
 
 export interface ValidationContextStandalone {
+  /**
+   * The name of the control.
+   */
   name: string;
+
+  /**
+   * The value of the control.
+   */
   value: string;
+
+  /**
+   * The control instance.
+   */
   control: FXControl;
 }
 
 export interface ValidationContextAttributed extends ValidationContextStandalone {
+  /**
+   * The value of the attribute.
+   */
   attributeValue: string;
 }
 
@@ -38,22 +48,22 @@ export const enum ValidatorPriority {
   HIGH
 }
 
-export type InvalidatorFunction = (reason: string) => void;
+export type InvalidationFunction = (reason: string) => void;
 
-export type ValidatorSetupFunction =
-  | ValidatorSetupFunctionStandalone
-  | ValidatorSetupFunctionAttributed;
-
-export type ValidatorSetupFunctionStandalone<
+export type ValidatorFunction<
   C extends ValidationContextStandalone = ValidationContextStandalone
 > = (
-  invalidate: InvalidatorFunction,
+  /**
+   * Invalidates the control with the given error reason (if given).
+   * @param reason - Error reason.
+   */
+  invalidate: InvalidationFunction,
+
+  /**
+   * The validation context.
+   */
   ctx: C
 ) => void | Promise<void>;
-
-export type ValidatorSetupFunctionAttributed = ValidatorSetupFunctionStandalone<
-  ValidationContextAttributed
->;
 
 export type ValidatorSetup =
   | ValidatorSetupStandalone
@@ -62,34 +72,97 @@ export type ValidatorSetup =
 export interface ValidatorSetupStandalone<
   C extends ValidationContextStandalone = ValidationContextStandalone
 > {
+  /**
+   * The name of the validator.
+   */
   name: string;
+
+  /**
+   * The priority of the validator.
+   *
+   * The available priorities are:
+   *
+   * **Low (0)** - Ran after all other validators.
+   * - `fx-pattern`
+   * - `fx-preset`
+   *
+   * **Medium (1)** - Ran after high priority validators.
+   * - `fx-min-len`
+   * - `fx-max-len`
+   * - `fx-min`
+   * - `fx-max`
+   *
+   * **High (2)** - Ran first.
+   * - `fx-required`
+   *
+   * @default 1 // ValidatorPriority.MEDIUM
+   */
   priority?: ValidatorPriority;
-  fn: ValidatorSetupFunctionStandalone<C>;
+
+  /**
+   * The validator function.
+   */
+  fn: ValidatorFunction<C>;
 }
 
 export interface ValidatorSetupAttributed extends
   ValidatorSetupStandalone<ValidationContextAttributed> {
+  /**
+   * The attributes that the validator triggers on.
+   */
   attribute: string | string[];
 }
 
+/**
+ * A form-x validator.
+ */
 export class Validator {
+  /**
+   * The name of the validator.
+   */
   readonly name: string | symbol;
-  readonly priority: ValidatorPriority;
-  readonly attributes: string[] | null;
-  readonly #fn: ValidatorSetupFunctionStandalone;
 
-  constructor(fn: ValidatorSetupFunctionAttributed);
-  // eslint-disable-next-line @typescript-eslint/unified-signatures
-  constructor(fn: ValidatorSetupFunctionStandalone);
+  /**
+   * The priority of the validator.
+   */
+  readonly priority: ValidatorPriority;
+
+  /**
+   * The attributes that the validator triggers on.
+   */
+  readonly attributes: string[] | null;
+
+  /**
+   * The validator function.
+   */
+  readonly fn: ValidatorFunction;
+
+  /**
+   * Creates a new form-x validator.
+   * @param fn - Validator function.
+   */
+  constructor(fn: ValidatorFunction);
+
+  /**
+   * Creates a new form-x validator.
+   *
+   * Enabled by setting the given attribute(s) on the target element(s).
+   * @param setup - Validator setup.
+   */
   constructor(setup: ValidatorSetupAttributed);
-  // eslint-disable-next-line @typescript-eslint/unified-signatures
+
+  /**
+   * Creates a new form-x validator.
+   * @param setup - Validator setup.
+   */
   constructor(setup: ValidatorSetupStandalone);
-  constructor(setup: ValidatorSetupFunction | ValidatorSetup) {
+
+  constructor(setup: ValidatorFunction | ValidatorSetup) {
     if (typeof setup === 'function') {
-      this.name = Symbol(); // TODO: hack
+      this.name = Symbol();
       this.priority = ValidatorPriority.LOW;
       this.attributes = null;
-      this.#fn = async (invalidate, ctx): Promise<void> =>
+      this.fn = async (invalidate, ctx): Promise<void> =>
         setup(invalidate, ctx as ValidationContextAttributed);
     } else {
       this.name = setup.name;
@@ -97,12 +170,17 @@ export class Validator {
       this.attributes = 'attribute' in setup
         ? arrayify(setup.attribute)
         : null;
-      this.#fn = async (invalidate, ctx): Promise<void> =>
+      this.fn = async (invalidate, ctx): Promise<void> =>
         setup.fn(invalidate, ctx as ValidationContextAttributed);
     }
   }
 
-  async exec(control: FXControl): Promise<Validation> {
+  /**
+   * Runs the validator.
+   * @param control - Control to validate.
+   * @returns Promise that resolves to the validation result.
+   */
+  async run(control: FXControl): Promise<Validation> {
     const ctx: ValidationContextStandalone = {
       name: control.name,
       value: control.el.value,
@@ -116,7 +194,7 @@ export class Validator {
         ?? null;
 
       if (attr === null) {
-        return [ValidationResultState.PASS, null];
+        return [ValidationState.PASS, null];
       }
 
       (ctx as ValidationContextAttributed).attributeValue = attr;
@@ -124,14 +202,14 @@ export class Validator {
 
     let reason = null as string | null;
 
-    const invalidate: InvalidatorFunction = (r) => {
+    const invalidate: InvalidationFunction = (r) => {
       reason = r;
     };
 
-    await this.#fn(invalidate, ctx);
+    await this.fn(invalidate, ctx);
 
     if (!reason) {
-      return [ValidationResultState.PASS, null];
+      return [ValidationState.PASS, null];
     }
 
     if (this.attributes) {
@@ -141,6 +219,6 @@ export class Validator {
         ?? reason;
     }
 
-    return [ValidationResultState.FAIL, reason];
+    return [ValidationState.FAIL, reason];
   }
 }

@@ -13,12 +13,14 @@ export const required: ValidatorSetupAttributed = {
     }
 
     const valid = FXControl.isMulti(ctx.control)
-      ? [...ctx.control.memberEls]
+      ? [...ctx.control.members]
         .some((el) => el.checked)
       : !!ctx.value.length;
 
-    if (!valid) {
-      i(`${ctx.name} is required`);
+    if (valid) {
+      return;
     }
+
+    i(`${ctx.name} is required`);
   }
 };

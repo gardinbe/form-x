@@ -1,18 +1,16 @@
 /**
- * A promise that resolves if/once the DOM has loaded.
+ * Executes a callback when the DOM is ready.
+ * @param callback - Callback to execute.
  */
-export const DOMReady = new Promise<void>((resolve) => {
-  if (
-    document.readyState === 'complete'
-		|| document.readyState === 'interactive'
-  ) {
-    resolve();
+export const DOMReady = (callback: () => void): void => {
+  if (['complete', 'interactive'].includes(document.readyState)) {
+    callback();
     return;
   }
 
-  const loaded = (): void => {
-    resolve();
+  const handler = (): void => {
+    callback();
   };
 
-  document.addEventListener('DOMContentLoaded', loaded, { once: true });
-});
+  document.addEventListener('DOMContentLoaded', handler, { once: true });
+};

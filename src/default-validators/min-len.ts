@@ -12,8 +12,10 @@ export const minLength: ValidatorSetupAttributed = {
       throw new Error(`${ctx.name} has an invalid minimum length`);
     }
 
-    if (ctx.value.length < minLen) {
-      i(`${ctx.name} must have at least ${minLen} characters`);
+    if (ctx.value.length >= minLen) {
+      return;
     }
+
+    i(`${ctx.name} must have at least ${minLen} characters`);
   }
 };

@@ -18,10 +18,12 @@ export const maxValue: ValidatorSetupAttributed = {
     const val = Number(ctx.value);
 
     if (
-      isNaN(val)
-      || val > max
+      !isNaN(val)
+      && val <= max
     ) {
-      i(`${ctx.name} must be less than or equal to ${max}`);
+      return;
     }
+
+    i(`${ctx.name} must be less than or equal to ${max}`);
   }
 };

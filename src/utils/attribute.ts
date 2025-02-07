@@ -19,9 +19,9 @@ export const setAttr = (el: Element, name: string, value: string): void => {
 };
 
 /**
- * Checks if an attribute value is truthy.
+ * Checks if the given attribute's value is truthy.
  * @param value - Attribute value to check.
- * @returns True if the attribute value is truthy, false otherwise.
+ * @returns `true` if the attribute value is truthy.
  */
 export const truthyAttr = (value: string | null): boolean => {
   return (
@@ -32,7 +32,7 @@ export const truthyAttr = (value: string | null): boolean => {
 };
 
 /**
- * Returns individual values from a comma-separated attribute value.
+ * Returns the given attribute's comma-separated values.
  * @param value - Attribute value to extract the individual values from.
  * @returns Array of values.
  */

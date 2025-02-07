@@ -12,8 +12,10 @@ export const maxLength: ValidatorSetupAttributed = {
       throw new Error(`${ctx.name} has an invalid maximum length`);
     }
 
-    if (ctx.value.length > maxLen) {
-      i(`${ctx.name} must have no more than ${maxLen} characters`);
+    if (ctx.value.length <= maxLen) {
+      return;
     }
+
+    i(`${ctx.name} must have no more than ${maxLen} characters`);
   }
 };

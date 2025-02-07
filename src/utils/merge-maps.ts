@@ -6,5 +6,5 @@ export type KeyedMap<K, V> = ReadonlyMap<K, V> | [K, V][];
  * @returns Array of values.
  */
 export const mergeMapsToArray = <T>(...maps: KeyedMap<unknown, T>[]): T[] => {
-  return [...new Map(maps.flatMap((map) => [...map])).values()];
+  return [...new Map(maps.flatMap((m) => [...m])).values()];
 };

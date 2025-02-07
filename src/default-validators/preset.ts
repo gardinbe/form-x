@@ -41,14 +41,16 @@ export const preset: ValidatorSetupAttributed = {
   priority: ValidatorPriority.LOW,
   fn: (i, ctx): void => {
     const selectedPresets = getSelectedPresets(ctx.attributeValue);
-    const valid = selectedPresets.every((preset) => preset.pattern.test(ctx.value));
+    const valid = selectedPresets.every((p) => p.pattern.test(ctx.value));
     const reason = selectedPresets.length === 1
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       ? selectedPresets[0]!.error(ctx.name)
       : `${ctx.name} is not in a valid format`;
 
-    if (!valid) {
-      i(reason);
+    if (valid) {
+      return;
     }
+
+    i(reason);
   }
 };
