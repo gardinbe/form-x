@@ -20,7 +20,7 @@
 
 <body>
   <style>
-    [fx-checking=true] {
+    form *[fx-checking=true] {
       background: gray;
     }
 
@@ -29,7 +29,10 @@
     }
   </style>
 
-  <form fx-validate>
+  <form
+    id="form"
+    fx-validate
+  >
     <fieldset>
       <label for="email">
         Email address:

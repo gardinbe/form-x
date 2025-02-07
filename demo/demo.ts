@@ -7,14 +7,16 @@ import { fx } from  '../src';
 fx.errorHtmlTemplate = (r: string): string =>
   `<li style='color: red;'>${r}</li>`;
 
+fx<HTMLFormElement>('#form').el.addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  alert('Form submitted!');
+});
+
 // username validator
 
-const uname = document.querySelector<HTMLInputElement>('#username')!;
 
-fx(uname).add(async (i, ctx) => {
-  const valid = await checkUsername(ctx.value);
-
-  if (!valid) {
+fx<HTMLInputElement>('#username').add(async (i, ctx) => {
+  if (!await checkUsername(ctx.value)) {
     i(`${ctx.name} is not cool`);
   }
 });

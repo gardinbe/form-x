@@ -328,12 +328,12 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
    */
   add(validator: Validator): void;
 
-  add(validator: ValidatorFunction | ValidatorSetup | Validator): void {
-    const v = validator instanceof Validator
-      ? validator
-      : new Validator(validator as ValidatorSetupAttributed);
+  add(param: ValidatorFunction | ValidatorSetup | Validator): void {
+    const validator = param instanceof Validator
+      ? param
+      : new Validator(param as ValidatorSetupAttributed);
 
-    this.#validators.set(v.name, v);
+    this.#validators.set(validator.name, validator);
   }
 
   /**
@@ -348,10 +348,10 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
    */
   remove(validator: Validator): void;
 
-  remove(validator: string | Validator): void {
-    const name = validator instanceof Validator
-      ? validator.name
-      : validator;
+  remove(param: string | Validator): void {
+    const name = param instanceof Validator
+      ? param.name
+      : param;
 
     this.#validators.delete(name);
   }

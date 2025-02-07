@@ -15,7 +15,7 @@ export interface FXFunction {
    * @param el - The form element.
    * @returns The `FXForm` instance.
    */
-  (el: FXFormElement): FXForm;
+  <E extends FXFormElement>(el: FXFormElement): FXForm<E>;
 
   /**
    * Returns the `FXControl` instance for the given control.
@@ -30,6 +30,28 @@ export interface FXFunction {
    * @returns The `FXForm` or `FXControl` instance.
    */
   (el: Element): FXForm | FXControl | null;
+
+  /**
+   * Returns the `FXForm` or `FXControl` instance for the given element.
+   * @param selector - The selector.
+   * @returns The `FXForm` or `FXControl` instance.
+   */
+  (selector: string): FXForm | FXControl | null;
+
+  /**
+   * Returns the `FXControl` instance for the given control.
+   * @param selector - The control selector.
+   * @returns The `FXControl` instance.
+   */
+  <E extends FXControlElement>(selector: string): FXControl<E>;
+
+  /**
+   * Returns the `FXForm` instance for the given form.
+   * @param selector - The form selector.
+   * @returns The `FXForm` instance.
+   */
+  <E extends FXFormElement>(selector: string): FXForm<E>;
+
 }
 
 export interface FXGlobal extends FXFunction {
@@ -126,7 +148,15 @@ const
 // TODO: fix types
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const fn: FXFunction = (el: Node): any => {
+const fn: FXFunction = (param: Node | string): any => {
+  const el = typeof param === 'string'
+    ? document.querySelector(param)
+    : param;
+
+  if (!el) {
+    return null;
+  }
+
   if (FXForm.isEl(el)) {
     return forms.get(el) ?? null;
   }
@@ -229,18 +259,18 @@ const validators: Map<string | symbol, Validator> = new Map(
     .map((v) => [v.name, new Validator(v)])
 );
 
-const add = (validator: ValidatorSetupAttributed | Validator): void => {
-  const _validator = validator instanceof Validator
-    ? validator
-    : new Validator(validator);
+const add = (param: ValidatorSetupAttributed | Validator): void => {
+  const validator = param instanceof Validator
+    ? param
+    : new Validator(param);
 
-  validators.set(_validator.name, _validator);
+  validators.set(validator.name, validator);
 };
 
-const remove = (validator: string | Validator): void => {
-  const name = typeof validator === 'string'
-    ? validator
-    : validator.name;
+const remove = (param: string | Validator): void => {
+  const name = typeof param === 'string'
+    ? param
+    : param.name;
 
   validators.delete(name);
 };
@@ -255,10 +285,10 @@ const addPreset = (preset: Preset): void => {
   presets.set(preset.name, preset);
 };
 
-const removePreset = (preset: Preset | string): void => {
-  const name = typeof preset === 'string'
-    ? preset
-    : preset.name;
+const removePreset = (param: Preset | string): void => {
+  const name = typeof param === 'string'
+    ? param
+    : param.name;
 
   presets.delete(name);
 };

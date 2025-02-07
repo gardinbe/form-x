@@ -7,7 +7,7 @@ export type FXFormElement = HTMLFormElement;
 /**
  * A form-x form.
  */
-export class FXForm {
+export class FXForm<E extends FXFormElement = FXFormElement> {
   /**
    * Checks if the given node is a form element.
    * @returns `true` if the node is a form element.
@@ -19,7 +19,7 @@ export class FXForm {
   /**
    * The element the instance is attached to.
    */
-  readonly el: HTMLFormElement;
+  readonly el: E;
 
   #valid: boolean;
 
@@ -32,7 +32,7 @@ export class FXForm {
    * need to create one.
    * @param form - Element to attach the instance to.
    */
-  constructor(form: FXFormElement) {
+  constructor(form: E) {
     form.noValidate = true;
 
     this.el = form;
@@ -129,6 +129,7 @@ export class FXForm {
 
   #handleSubmit(ev: SubmitEvent): void {
     ev.preventDefault();
+    ev.stopImmediatePropagation();
 
     void (async (): Promise<void> => {
       await this.check();
@@ -138,7 +139,7 @@ export class FXForm {
       }
 
       this.el.removeEventListener('submit', this.#submitHandler);
-      this.el.submit();
+      this.el.requestSubmit();
     })();
   }
 

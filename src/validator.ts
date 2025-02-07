@@ -157,21 +157,21 @@ export class Validator {
    */
   constructor(setup: ValidatorSetupStandalone);
 
-  constructor(setup: ValidatorFunction | ValidatorSetup) {
-    if (typeof setup === 'function') {
+  constructor(param: ValidatorFunction | ValidatorSetup) {
+    if (typeof param === 'function') {
       this.name = Symbol();
       this.priority = ValidatorPriority.LOW;
       this.attributes = null;
       this.fn = async (invalidate, ctx): Promise<void> =>
-        setup(invalidate, ctx as ValidationContextAttributed);
+        param(invalidate, ctx as ValidationContextAttributed);
     } else {
-      this.name = setup.name;
-      this.priority = setup.priority ?? ValidatorPriority.LOW;
-      this.attributes = 'attribute' in setup
-        ? arrayify(setup.attribute)
+      this.name = param.name;
+      this.priority = param.priority ?? ValidatorPriority.LOW;
+      this.attributes = 'attribute' in param
+        ? arrayify(param.attribute)
         : null;
       this.fn = async (invalidate, ctx): Promise<void> =>
-        setup.fn(invalidate, ctx as ValidationContextAttributed);
+        param.fn(invalidate, ctx as ValidationContextAttributed);
     }
   }
 
