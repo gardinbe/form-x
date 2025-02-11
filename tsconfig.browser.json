@@ -1,0 +1,7 @@
+{
+  "extends": "./tools/tsconfig/browser",
+  "include": [
+    "src/",
+    "demo/"
+  ]
+}

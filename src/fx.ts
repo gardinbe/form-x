@@ -1,69 +1,68 @@
-import type { FXControlElement, FXMultiControlElement } from './control';
-import { FXControl } from './control';
-import { defaultValidators } from './default-validators';
-import type { Preset } from './default-validators/preset';
-import { defaultPresets } from './default-validators/preset';
-import type { FXFormElement } from './form';
-import { FXForm } from './form';
-import { childObserver, sanitizeAttrQuery } from './utils';
+import type { ControlElement, MultiControlElement } from './control';
+import { Control } from './control';
+import type { FormElement } from './form';
+import { Form } from './form';
+import { childObserver, query, queryAll, sanitizeAttrQuery } from './utils';
 import type { ValidatorSetupAttributed } from './validator';
 import { Validator } from './validator';
+import { defaultValidators } from './validators';
+import type { Preset } from './validators/preset';
+import { defaultPresets } from './validators/preset';
 
 export interface FXFunction {
   /**
-   * Returns the `FXForm` instance for the given form.
+   * Returns the form-x form instance for the given form element.
    * @param el - The form element.
-   * @returns The `FXForm` instance.
+   * @returns the form-x form instance.
    */
-  <E extends FXFormElement>(el: FXFormElement): FXForm<E>;
+  <E extends FormElement>(el: FormElement): Form<E>;
 
   /**
-   * Returns the `FXControl` instance for the given control.
+   * Returns the form-x control instance for the given control element.
    * @param el - The control element.
-   * @returns The `FXControl` instance.
+   * @returns the form-x control instance.
    */
-  <E extends FXControlElement>(el: E): FXControl<E>;
+  <E extends ControlElement>(el: E): Control<E>;
 
   /**
-   * Returns the `FXForm` or `FXControl` instance for the given element.
+   * Returns the form-x form or control instance for the given element.
    * @param el - The element.
-   * @returns The `FXForm` or `FXControl` instance.
+   * @returns The form-x form or control instance.
    */
-  (el: Element): FXForm | FXControl | null;
+  (el: Element): Form | Control | null;
 
   /**
-   * Returns the `FXForm` or `FXControl` instance for the given element.
+   * Returns the form-x form or control instance for the given selector.
    * @param selector - The selector.
-   * @returns The `FXForm` or `FXControl` instance.
+   * @returns The form-x form or control instance.
    */
-  (selector: string): FXForm | FXControl | null;
+  (selector: string): Form | Control | null;
 
   /**
-   * Returns the `FXControl` instance for the given control.
+   * Returns the form-x control instance for the given control selector.
    * @param selector - The control selector.
-   * @returns The `FXControl` instance.
+   * @returns the form-x control instance.
    */
-  <E extends FXControlElement>(selector: string): FXControl<E>;
+  <E extends ControlElement>(selector: string): Control<E> | null;
 
   /**
-   * Returns the `FXForm` instance for the given form.
+   * Returns the form-x form instance for the given form selector.
    * @param selector - The form selector.
-   * @returns The `FXForm` instance.
+   * @returns the form-x form instance.
    */
-  <E extends FXFormElement>(selector: string): FXForm<E>;
-
+  <E extends FormElement>(selector: string): Form<E> | null;
 }
 
-export interface FXGlobal extends FXFunction {
+export interface FX extends FXFunction {
   /**
-   * WeakMap of FXForms in the document.
+   * WeakMap of form-x forms in the document.
    */
-  readonly forms: WeakMap<FXFormElement, FXForm>;
+  readonly forms: WeakMap<FormElement, Form>;
 
   /**
-   * WeakMap of FXControls in the document.
+   * WeakMap of form-x controls in the document.
    */
-  readonly controls: WeakMap<FXControlElement, FXControl>;
+  readonly controls: WeakMap<ControlElement, Control>;
 
   /**
    * MutationObserver for the document.
@@ -142,57 +141,55 @@ export interface FXGlobal extends FXFunction {
 // forms and controls
 
 const
-  forms: WeakMap<FXFormElement, FXForm> = new WeakMap(),
-  controls: WeakMap<FXControlElement, FXControl> = new WeakMap();
-
-// TODO: fix types
+  forms: WeakMap<FormElement, Form> = new WeakMap(),
+  controls: WeakMap<ControlElement, Control> = new WeakMap();
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fn: FXFunction = (param: Node | string): any => {
   const el = typeof param === 'string'
-    ? document.querySelector(param)
+    ? query(param)
     : param;
 
   if (!el) {
     return null;
   }
 
-  if (FXForm.isEl(el)) {
+  if (Form.isEl(el)) {
     return forms.get(el) ?? null;
   }
 
-  if (FXControl.isEl(el)) {
-    return controls.get(el);
+  if (Control.isEl(el)) {
+    return controls.get(el) ?? null;
   }
 
   return null;
 };
 
-const createForm = (el: FXFormElement): void => {
-  forms.set(el, new FXForm(el));
+const createForm = (el: FormElement): void => {
+  forms.set(el, new Form(el));
 };
 
-const destroyForm = (el: FXFormElement): void => {
+const destroyForm = (el: FormElement): void => {
   fn(el).destroy();
   forms.delete(el);
 };
 
-const createControl = (el: FXControlElement): void => {
-  if (FXControl.isMemberEl(el)) {
-    // TODO: watch `type` on controls, as when type changes to
-    // radio/checkbox, we need to get all members
+const createControl = (el: ControlElement): void => {
+  if (Control.isMemberEl(el)) {
+    // TODO: edge case - watch `type` on controls, as when type
+    // changes to radio/checkbox, we need to find all members.
 
     const els = [
       ...el.form
         ? el.form.elements
-        : document.querySelectorAll(
+        : queryAll(
           `[type='${sanitizeAttrQuery(el.type)}'][name='${sanitizeAttrQuery(el.name)}']`
         )
     ];
 
     const controlEl = els
-      .find((el): el is FXMultiControlElement =>
-        FXControl.isMemberEl(el)
+      .find((el): el is MultiControlElement =>
+        Control.isMemberEl(el)
         && el.name === el.name
         && controls.has(el));
 
@@ -204,19 +201,19 @@ const createControl = (el: FXControlElement): void => {
     }
   }
 
-  controls.set(el, new FXControl(el));
+  controls.set(el, new Control(el));
 };
 
-const destroyControl = (el: FXControlElement): void => {
+const destroyControl = (el: ControlElement): void => {
   const control = fn(el);
 
   if (
-    FXControl.isMemberEl(el)
+    Control.isMemberEl(el)
     && control.members.size > 1
   ) {
     if (el === control.el) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      (control.el as FXControlElement) = [...control.members].find((m) => m !== el)!;
+      (control.el as ControlElement) = [...control.members].find((m) => m !== el)!;
     }
 
     control.members.delete(el);
@@ -230,12 +227,12 @@ const destroyControl = (el: FXControlElement): void => {
 const observer = childObserver(document.body, ([removed, added]) => {
   for (const el of removed) {
     if (
-      FXForm.isEl(el)
+      Form.isEl(el)
       && forms.has(el)
     ) {
       destroyForm(el);
     } else if (
-      FXControl.isEl(el)
+      Control.isEl(el)
       && controls.has(el)
     ) {
       destroyControl(el);
@@ -243,9 +240,9 @@ const observer = childObserver(document.body, ([removed, added]) => {
   }
 
   for (const el of added) {
-    if (FXForm.isEl(el)) {
+    if (Form.isEl(el)) {
       createForm(el);
-    } else if (FXControl.isEl(el)) {
+    } else if (Control.isEl(el)) {
       createControl(el);
     }
   }
@@ -303,7 +300,7 @@ const errorHtmlTemplate = (reason: string): string => {
  * Initializes the forms and controls.
  */
 export const init = (): void => {
-  const formEls = document.querySelectorAll<FXFormElement>(
+  const formEls = queryAll<FormElement>(
     'form'
   );
 
@@ -311,7 +308,7 @@ export const init = (): void => {
     createForm(el);
   }
 
-  const controlEls = document.querySelectorAll<FXControlElement>(
+  const controlEls = queryAll<ControlElement>(
     'input, textarea, select'
   );
 
@@ -323,7 +320,7 @@ export const init = (): void => {
 /**
  * The global form-x instance.
  */
-export const fx: FXGlobal = Object.assign(fn, {
+export const fx: FX = Object.assign(fn, {
   forms,
   controls,
   observer,
@@ -341,7 +338,7 @@ declare global {
     /**
      * The global form-x instance.
      */
-    fx: FXGlobal;
+    fx: FX;
   }
 }
 

@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [
     dts({
       rollupTypes: true,
-      tsconfigPath: 'tsconfig.app.json'
+      tsconfigPath: 'tsconfig.browser.json'
     })
   ],
   build: {

@@ -1,26 +1,21 @@
 /* eslint-disable import/no-named-as-default-member */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable import/newline-after-import */
 
 import javascript from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
-// @ts-expect-error no definitions
 import pluginImport from 'eslint-plugin-import';
-// @ts-expect-error no definitions
 import pluginImportNewlines from 'eslint-plugin-import-newlines';
-// @ts-expect-error no definitions
 import pluginPreferArrowFns from 'eslint-plugin-prefer-arrow-functions';
 import pluginSimpleImportSort from 'eslint-plugin-simple-import-sort';
-// @ts-expect-error no definitions
 import pluginSortExports from 'eslint-plugin-sort-exports';
 import pluginTsdoc from 'eslint-plugin-tsdoc';
 import globals from 'globals';
 import typescript from 'typescript-eslint';
 
-/** @type {Config[]} */
+/** @type {import('eslint').Linter.Config[]} */
 export default [
-  // Ignored
+  // ignored
 
   {
     ignores: [
@@ -29,14 +24,14 @@ export default [
     ]
   },
 
-  // Presets
+  // presets
 
   javascript.configs.recommended,
   ...typescript.configs.strictTypeChecked,
   stylistic.configs['recommended-flat'],
   pluginImport.flatConfigs.recommended,
 
-  // Plugins
+  // plugins
 
   {
     plugins: {
@@ -49,7 +44,7 @@ export default [
     }
   },
 
-  // Node
+  // node environment
 
   {
     languageOptions: {
@@ -89,7 +84,7 @@ export default [
     }
   },
 
-  // App
+  // browser environment
 
   {
     files: [
@@ -107,7 +102,7 @@ export default [
         ecmaFeatures: {
           jsx: true
         },
-        project: 'tsconfig.app.json'
+        project: 'tsconfig.browser.json'
       }
     },
     settings: {
@@ -127,13 +122,13 @@ export default [
         node: true,
         typescript: {
           alwaysTryTypes: true,
-          project: 'tsconfig.app.json'
+          project: 'tsconfig.browser.json'
         }
       }
     }
   },
 
-  // Rules
+  // global rules
 
   {
     rules: {
@@ -350,7 +345,7 @@ export default [
     }
   },
 
-  // Typescript-only
+  // typescript rules
 
   {
     files: ['**/*.{ts,mts,cts,tsx}'],
@@ -359,84 +354,5 @@ export default [
 
       'tsdoc/syntax': 'warn'
     }
-  },
-
-  // JSX-only
-
-  {
-    files: ['**/*.{jsx,tsx}'],
-    rules: {
-      // Stylistic JSX
-
-      '@stylistic/jsx-closing-bracket-location': [
-        'error',
-        {
-          selfClosing: 'tag-aligned',
-          nonEmpty: 'tag-aligned'
-        }
-      ],
-      '@stylistic/jsx-curly-brace-presence': [
-        'error',
-        {
-          props: 'never',
-          children: 'never',
-          propElementValues: 'always'
-        }
-      ],
-      '@stylistic/jsx-curly-newline': [
-        'error',
-        { multiline: 'consistent' }
-      ],
-      '@stylistic/jsx-first-prop-new-line': [
-        'error',
-        'multiline'
-      ],
-      '@stylistic/jsx-indent': [
-        'error',
-        2
-      ],
-      '@stylistic/jsx-indent-props': [
-        'error',
-        2
-      ],
-      '@stylistic/jsx-pascal-case': 'error',
-      '@stylistic/jsx-quotes': [
-        'error',
-        'prefer-single'
-      ],
-      '@stylistic/jsx-sort-props': [
-        'error',
-        {
-          noSortAlphabetically: true,
-          ignoreCase: true,
-          reservedFirst: true,
-          shorthandLast: true,
-          callbacksLast: true
-        }
-      ],
-      '@stylistic/jsx-tag-spacing': [
-        'error',
-        {
-          closingSlash: 'never',
-          beforeSelfClosing: 'always',
-          afterOpening: 'never',
-          beforeClosing: 'never'
-        }
-      ],
-      '@stylistic/jsx-wrap-multilines': [
-        'error',
-        {
-          declaration: 'parens-new-line',
-          assignment: 'parens-new-line',
-          return: 'parens-new-line',
-          arrow: 'parens-new-line',
-          condition: 'parens-new-line',
-          logical: 'parens-new-line',
-          prop: 'parens-new-line'
-        }
-      ]
-    }
   }
 ];
-
-/** @typedef {import('eslint').Linter.Config} Config */

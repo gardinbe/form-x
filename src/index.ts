@@ -2,21 +2,21 @@ import './init';
 
 export {
   type CheckRevoker,
-  FXControl,
-  type FXControlElement,
-  type FXMultiControlElement
+  Control,
+  type ControlElement,
+  type MultiControlElement
 } from './control';
 
 export {
-  FXForm,
-  type FXFormElement
-} from './form';
+  type FX,
+  type FXFunction,
+  fx
+} from './fx';
 
 export {
-  type FXFunction,
-  type FXGlobal,
-  fx
-} from './global';
+  Form,
+  type FormElement
+} from './form';
 
 export {
   type InvalidationFunction,
@@ -35,4 +35,4 @@ export {
 
 export {
   defaultValidators
-} from './default-validators';
+} from './validators';

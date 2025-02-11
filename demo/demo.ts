@@ -7,7 +7,7 @@ import { fx } from  '../src';
 fx.errorHtmlTemplate = (r: string): string =>
   `<li style='color: red;'>${r}</li>`;
 
-fx<HTMLFormElement>('#form').el.addEventListener('submit', (ev) => {
+fx<HTMLFormElement>('#form')!.el.addEventListener('submit', (ev) => {
   ev.preventDefault();
   alert('Form submitted!');
 });
@@ -15,7 +15,7 @@ fx<HTMLFormElement>('#form').el.addEventListener('submit', (ev) => {
 // username validator
 
 
-fx<HTMLInputElement>('#username').add(async (i, ctx) => {
+fx<HTMLInputElement>('#username')!.add(async (i, ctx) => {
   if (!await checkUsername(ctx.value)) {
     i(`${ctx.name} is not cool`);
   }

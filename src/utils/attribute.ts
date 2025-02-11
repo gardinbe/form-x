@@ -1,24 +1,4 @@
 /**
- * Returns the value of an attribute.
- * @param el - Element to get the attribute from.
- * @param name - Name of the attribute.
- * @returns Value of the attribute.
- */
-export const getAttr = (el: Element, name: string): string | null => {
-  return el.getAttribute(name);
-};
-
-/**
- * Sets the value of an attribute.
- * @param el - Element to set the attribute on.
- * @param name - Name of the attribute.
- * @param value - Value of the attribute.
- */
-export const setAttr = (el: Element, name: string, value: string): void => {
-  el.setAttribute(name, value);
-};
-
-/**
  * Checks if the given attribute's value is truthy.
  * @param value - Attribute value to check.
  * @returns `true` if the attribute value is truthy.
@@ -57,7 +37,7 @@ export const attrErrorReason = <T extends string>(attribute: T): `${T}:error` =>
 };
 
 /**
- * Returns a sanitized version of an attribute to be used within a querySelector.
+ * Returns a sanitized version of an attribute to be used within an element selector.
  * @param attr - Attribute to sanitize.
  * @returns Sanitized attribute.
  */

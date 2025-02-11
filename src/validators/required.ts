@@ -1,4 +1,4 @@
-import { FXControl } from '../control';
+import { Control } from '../control';
 import { truthyAttr } from '../utils';
 import type { ValidatorSetupAttributed } from '../validator';
 import { ValidatorPriority } from '../validator';
@@ -12,7 +12,7 @@ export const required: ValidatorSetupAttributed = {
       return;
     }
 
-    const valid = FXControl.isMulti(ctx.control)
+    const valid = Control.isMulti(ctx.control)
       ? [...ctx.control.members]
         .some((el) => el.checked)
       : !!ctx.value.length;
