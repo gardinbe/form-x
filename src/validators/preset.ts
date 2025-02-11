@@ -1,4 +1,4 @@
-import { fx } from '../global';
+import { fx } from '../fx';
 import { multiAttr } from '../utils';
 import type { ValidatorSetupAttributed } from '../validator';
 import { ValidatorPriority } from '../validator';

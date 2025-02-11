@@ -1,18 +1,26 @@
-import { FXControl } from './control';
-import { fx } from './global';
-import { getAttr, setAttr, truthyAttr } from './utils';
+import { Control } from './control';
+import { fx } from './fx';
+import {
+  attributeObserver,
+  delAttribute,
+  getAttribute,
+  off,
+  on,
+  setAttribute,
+  truthyAttr
+} from './utils';
 
-export type FXFormElement = HTMLFormElement;
+export type FormElement = HTMLFormElement;
 
 /**
  * A form-x form.
  */
-export class FXForm<E extends FXFormElement = FXFormElement> {
+export class Form<E extends FormElement = FormElement> {
   /**
    * Checks if the given node is a form element.
    * @returns `true` if the node is a form element.
    */
-  static isEl(node: Node): node is FXFormElement {
+  static isEl(node: Node): node is FormElement {
     return node instanceof HTMLFormElement;
   }
 
@@ -24,6 +32,7 @@ export class FXForm<E extends FXFormElement = FXFormElement> {
   #valid: boolean;
 
   readonly #submitHandler: (ev: SubmitEvent) => void;
+  readonly #ao: MutationObserver;
 
   /**
    * Creates a new form-x form.
@@ -33,28 +42,36 @@ export class FXForm<E extends FXFormElement = FXFormElement> {
    * @param form - Element to attach the instance to.
    */
   constructor(form: E) {
-    form.noValidate = true;
-
     this.el = form;
     this.#valid = true;
 
-    this.#submitHandler = this.#handleSubmit.bind(this);
-    form.addEventListener('submit', this.#submitHandler);
+    this.#submitHandler = (ev): void => {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      void this.submit();
+    };
 
-    // init read-only attributes
+    on(form, 'reset', this.#submitHandler);
 
-    this.#valid$ = true;
-    this.#checking$ = false;
+    // watch attributes
+
+    this.#ao = attributeObserver(form, this.#checkAttribute.bind(this));
+
+    // init state attributes
+
+    this.el.noValidate = !this.inactive;
+    this.#setState('fx-valid', !this.inactive ? this.valid : null);
+    this.#setState('fx-checking', !this.inactive ? false : null);
   }
 
   /**
    * Set of the current controls on the form.
    */
-  get controls(): Set<FXControl> {
+  get controls(): Set<Control> {
     return new Set(
       [...this.el.elements]
         .map((el) => fx(el))
-        .filter((el): el is FXControl => !!el)
+        .filter((el): el is Control => !!el)
     );
   }
 
@@ -71,6 +88,13 @@ export class FXForm<E extends FXFormElement = FXFormElement> {
   }
 
   /**
+   * Whether the form is inactive.
+   */
+  get inactive(): boolean {
+    return !truthyAttr(getAttribute(this.el, 'fx-validate'));
+  }
+
+  /**
    * Checks the validity of the form.
    *
    * This checks the validity of all controls within the form.
@@ -79,11 +103,13 @@ export class FXForm<E extends FXFormElement = FXFormElement> {
   async check(): Promise<boolean> {
     this.#valid = true;
 
-    if (this.#disabled) {
+    if (this.inactive) {
+      this.#setState('fx-valid', null);
+      this.#setState('fx-checking', null);
       return true;
     }
 
-    this.#checking$ = true;
+    this.#setState('fx-checking', true);
 
     const results = await Promise.all(
       [...this.controls].map(async (c) => c.check())
@@ -97,8 +123,7 @@ export class FXForm<E extends FXFormElement = FXFormElement> {
       this.setInvalid();
     }
 
-    this.#checking$ = false;
-
+    this.#setState('fx-checking', false);
     return this.#valid;
   }
 
@@ -107,7 +132,7 @@ export class FXForm<E extends FXFormElement = FXFormElement> {
    */
   setValid(): void {
     this.#valid = true;
-    this.#valid$ = true;
+    this.#setState('fx-valid', true);
   }
 
   /**
@@ -115,43 +140,48 @@ export class FXForm<E extends FXFormElement = FXFormElement> {
    */
   setInvalid(): void {
     this.#valid = false;
-    this.#valid$ = false;
+    this.#setState('fx-valid', false);
+  }
+
+  async submit(): Promise<void> {
+    await this.check();
+
+    if (!this.#valid) {
+      return;
+    }
+
+    off(this.el, 'submit', this.#submitHandler);
+    this.el.requestSubmit();
   }
 
   /**
    * Destroys the instance.
    *
-   * Removes all event listeners and disconnects observers.
+   * Removes all event listeners, disconnects observers and removes all state attributes.
    */
   destroy(): void {
-    this.el.removeEventListener('submit', this.#submitHandler);
+    this.#ao.disconnect();
+    off(this.el, 'submit', this.#submitHandler);
+
+    this.el.noValidate = false;
+    this.#setState('fx-valid', null);
+    this.#setState('fx-checking', null);
   }
 
-  #handleSubmit(ev: SubmitEvent): void {
-    ev.preventDefault();
-    ev.stopImmediatePropagation();
-
-    void (async (): Promise<void> => {
-      await this.check();
-
-      if (!this.#valid) {
-        return;
-      }
-
-      this.el.removeEventListener('submit', this.#submitHandler);
-      this.el.requestSubmit();
-    })();
+  #checkAttribute(attr: string): void {
+    if (attr === 'fx-validate') {
+      this.el.noValidate = !this.inactive;
+      this.#setState('fx-valid', !this.inactive ? this.valid : null);
+      this.#setState('fx-checking', !this.inactive ? false : null);
+    }
   }
 
-  get #disabled(): boolean {
-    return !truthyAttr(getAttr(this.el, 'fx-validate'));
-  }
+  #setState(attr: string, value: boolean | string | number | null): void {
+    if (value === null) {
+      delAttribute(this.el, attr);
+      return;
+    }
 
-  set #valid$(v: boolean) {
-    setAttr(this.el, 'fx-valid', `${v}`);
-  }
-
-  set #checking$(v: boolean) {
-    setAttr(this.el, 'fx-checking', `${v}`);
+    setAttribute(this.el, attr, `${value}`);
   }
 }

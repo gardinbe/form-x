@@ -1,3 +1,5 @@
+import { on } from './dom-helpers';
+
 /**
  * Executes a callback when the DOM is ready.
  * @param callback - Callback to execute.
@@ -12,5 +14,5 @@ export const DOMReady = (callback: () => void): void => {
     callback();
   };
 
-  document.addEventListener('DOMContentLoaded', handler, { once: true });
+  on(document, 'DOMContentLoaded', handler, { once: true });
 };

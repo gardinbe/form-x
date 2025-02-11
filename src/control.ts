@@ -1,12 +1,16 @@
-import { fx } from './global';
+import { fx } from './fx';
 import {
   arrayify,
   attrErrorReason,
   attributeObserver,
-  getAttr,
+  delAttribute,
+  getAttribute,
   mergeMapsToArray,
   multiAttr,
-  setAttr,
+  off,
+  on,
+  queryAll,
+  setAttribute,
   truthyAttr
 } from './utils';
 import type {
@@ -19,30 +23,30 @@ import { ValidationState, Validator, ValidatorPriority } from './validator';
 
 export type CheckRevoker = () => void;
 
-export type FXControlElement =
+export type ControlElement =
   | HTMLInputElement
   | HTMLTextAreaElement
   | HTMLSelectElement;
 
-export type FXMultiControlElement = HTMLInputElement;
+export type MultiControlElement = HTMLInputElement;
 
 /**
  * A form-x control.
  */
-export class FXControl<E extends FXControlElement = FXControlElement> {
+export class Control<E extends ControlElement = ControlElement> {
   /**
    * Checks if the given control is a multi control (a radio or checkbox).
    * @returns `true` if the control is a multi control.
    */
-  static isMulti(control: FXControl): control is FXControl<FXMultiControlElement> {
-    return FXControl.isMemberEl(control.el);
+  static isMulti(control: Control): control is Control<MultiControlElement> {
+    return Control.isMemberEl(control.el);
   }
 
   /**
    * Checks if the given node is a control element.
    * @returns `true` if the node is a control element.
    */
-  static isEl(node: Node): node is FXControlElement {
+  static isEl(node: Node): node is ControlElement {
     return (
       node instanceof HTMLInputElement
       || node instanceof HTMLTextAreaElement
@@ -54,7 +58,7 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
    * Checks if the given node is a member control element.
    * @returns `true` if the node is a member control element.
    */
-  static isMemberEl(node: Node): node is FXMultiControlElement {
+  static isMemberEl(node: Node): node is MultiControlElement {
     return (
       node instanceof HTMLInputElement
       && (node.type === 'radio'
@@ -80,9 +84,9 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
   readonly #validators: Map<string | symbol, Validator>;
   #revoker: CheckRevoker | null;
 
-  readonly #recurEvents: Set<string>;
-  readonly #recurHandler: () => void;
-  #listeningRecur: boolean;
+  readonly #repeatEvents: Set<string>;
+  readonly #repeatHandler: () => void;
+  #listeningRepeat: boolean;
 
   readonly #startEvents: Set<string>;
   readonly #startHandler: () => void;
@@ -108,27 +112,27 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
     this.#validators = new Map();
     this.#revoker = null;
 
-    // handle recurring events
+    // handle repeating events
 
-    this.#recurEvents = new Set(
-      multiAttr(getAttr(el, 'fx-on'))
+    this.#repeatEvents = new Set(
+      multiAttr(getAttribute(el, 'fx-on'))
     );
 
-    this.#recurHandler = (): void => {
+    this.#repeatHandler = (): void => {
       void this.check();
     };
 
-    this.#listeningRecur = false;
+    this.#listeningRepeat = false;
 
     // handle starting events
 
     this.#startEvents = new Set(
-      multiAttr(getAttr(el, 'fx-start-on'))
+      multiAttr(getAttribute(el, 'fx-start-on'))
     );
 
     this.#startHandler = (): void => {
       this.start();
-      this.#recurHandler();
+      this.#repeatHandler();
     };
 
     this.#listeningStart = false;
@@ -141,12 +145,12 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
 
     // watch attributes
 
-    this.#ao = attributeObserver(el, this.#handleAttributes.bind(this));
+    this.#ao = attributeObserver(el, this.#checkAttribute.bind(this));
 
-    // init read-only attributes
+    // init state attributes
 
-    this.#valid$ = true;
-    this.#checking$ = false;
+    this.#setState('fx-valid', !this.inactive ? this.valid : null);
+    this.#setState('fx-checking', !this.inactive ? false : null);
   }
 
   /**
@@ -176,11 +180,30 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
   }
 
   /**
+   * The `fx-name` attribute of the control.
+   */
+  get name(): string {
+    return getAttribute(this.el, 'fx-name') ?? 'Field';
+  }
+
+  /**
+   * Whether the control is inactive.
+   */
+  get inactive(): boolean {
+    return (
+      this.el.disabled
+        || !truthyAttr(getAttribute(this.el, 'fx-validate'))
+    );
+  }
+
+  /**
    * Checks the validity of the control.
    * @returns Promise that resolves to `true` if the control is valid.
    */
   async check(): Promise<boolean> {
-    if (this.#disabled) {
+    if (this.inactive) {
+      this.#setState('fx-valid', null);
+      this.#setState('fx-checking', null);
       this.setValid();
       return true;
     }
@@ -189,7 +212,7 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
       this.start();
     }
 
-    this.#checking$ = true;
+    this.#setState('fx-checking', true);
     this.#removeErrors();
 
     if (this.#revoker) {
@@ -207,10 +230,10 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
     const validators = mergeMapsToArray(fx.validators, this.#validators);
 
     const run = async (priority: ValidatorPriority): Promise<boolean> => {
-      const prioritizedValidators = validators
+      const group = validators
         .filter((v) => v.priority === priority);
 
-      const validations = prioritizedValidators.map(async (v) => {
+      const validations = group.map(async (v) => {
         const [state, reason] = await v.run(this);
 
         if (
@@ -245,7 +268,7 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
       this.setValid();
     }
 
-    this.#checking$ = false;
+    this.#setState('fx-checking', false);
 
     return this.#valid;
   }
@@ -255,7 +278,7 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
    */
   setValid(): void {
     this.#valid = true;
-    this.#valid$ = true;
+    this.#setState('fx-valid', true);
 
     this.#removeErrors();
   }
@@ -266,7 +289,7 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
    */
   setInvalid(reason?: string): void {
     this.#valid = false;
-    this.#valid$ = false;
+    this.#setState('fx-valid', false);
 
     if (!reason) {
       return;
@@ -274,7 +297,7 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
 
     this.#errors.add(reason);
 
-    for (const el of this.#errorEls) {
+    for (const el of this.#getErrorEls()) {
       el.insertAdjacentHTML(
         'beforeend',
         fx.errorHtmlTemplate(reason)
@@ -357,66 +380,76 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
   }
 
   /**
-   * Triggers the control to start listening for recurring events.
+   * Triggers the control to start listening for repeating events.
    */
   start(): void {
     this.#ignoreStart();
     this.#started = true;
-    this.#listenRecur();
+    this.#listenRepeat();
   }
 
   /**
    * Destroys the instance.
    *
-   * Removes all event listeners and disconnects observers.
+   * Removes all event listeners, disconnects observers and removes all state attributes.
    */
   destroy(): void {
     this.#ao.disconnect();
     this.#ignoreStart();
-    this.#ignoreRecur();
-    this.setValid();
+    this.#ignoreRepeat();
+
+    this.#setState('fx-valid', null);
+    this.#setState('fx-checking', null);
   }
 
   #removeErrors(): void {
     this.#errors.clear();
 
-    for (const el of this.#errorEls) {
+    for (const el of this.#getErrorEls()) {
       el.replaceChildren();
     }
   }
 
-  #listenRecur(): void {
-    if (!this.#started) {
-      return;
-    }
-
-    for (const el of this.members) {
-      for (const ev of this.#recurEvents) {
-        el.addEventListener(ev, this.#recurHandler);
-      }
-    }
-
-    this.#listeningRecur = true;
+  #getErrorEls(): HTMLElement[] {
+    const contextEl = this.el.form ?? document.body;
+    return queryAll(
+        `[fx-errors='${this.el.name}']`,
+        contextEl
+    );
   }
 
-  #ignoreRecur(): void {
+  #listenRepeat(): void {
     if (!this.#started) {
       return;
     }
 
     for (const el of this.members) {
-      for (const ev of this.#recurEvents) {
-        el.removeEventListener(ev, this.#recurHandler);
+      for (const ev of this.#repeatEvents) {
+        on(el, ev, this.#repeatHandler);
       }
     }
 
-    this.#listeningRecur = false;
+    this.#listeningRepeat = true;
+  }
+
+  #ignoreRepeat(): void {
+    if (!this.#started) {
+      return;
+    }
+
+    for (const el of this.members) {
+      for (const ev of this.#repeatEvents) {
+        off(el, ev, this.#repeatHandler);
+      }
+    }
+
+    this.#listeningRepeat = false;
   }
 
   #listenStart(): void {
     for (const el of this.members) {
       for (const event of this.#startEvents) {
-        el.addEventListener(event, this.#startHandler);
+        on(el, event, this.#startHandler);
       }
     }
 
@@ -426,30 +459,36 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
   #ignoreStart(): void {
     for (const el of this.members) {
       for (const event of this.#startEvents) {
-        el.removeEventListener(event, this.#startHandler);
+        off(el, event, this.#startHandler);
       }
     }
 
     this.#listeningStart = false;
   }
 
-  #handleAttributes(attr: string): void {
-    if (attr === 'fx-on') {
-      const listening = this.#listeningRecur;
+  #checkAttribute(attr: string): void {
+    if (
+      attr === 'disabled'
+      || attr === 'fx-validate'
+    ) {
+      this.#setState('fx-valid', !this.inactive ? this.valid : null);
+      this.#setState('fx-checking', !this.inactive ? false : null);
+    } else if (attr === 'fx-on') {
+      const listening = this.#listeningRepeat;
 
       if (listening) {
-        this.#ignoreRecur();
+        this.#ignoreRepeat();
       }
 
-      this.#recurEvents.clear();
-      const events = multiAttr(getAttr(this.el, 'fx-on'));
+      this.#repeatEvents.clear();
+      const events = multiAttr(getAttribute(this.el, 'fx-on'));
 
       for (const event of events) {
-        this.#recurEvents.add(event);
+        this.#repeatEvents.add(event);
       }
 
       if (listening) {
-        this.#listenRecur();
+        this.#listenRepeat();
       }
     } else if (attr === 'fx-start-on') {
       const listening = this.#listeningStart;
@@ -459,7 +498,7 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
       }
 
       this.#startEvents.clear();
-      const events = multiAttr(getAttr(this.el, 'fx-start-on'));
+      const events = multiAttr(getAttribute(this.el, 'fx-start-on'));
 
       for (const event of events) {
         this.#startEvents.add(event);
@@ -485,32 +524,12 @@ export class FXControl<E extends FXControlElement = FXControlElement> {
     }
   }
 
-  /**
-   * The name of the control.
-   */
-  get name(): string {
-    return getAttr(this.el, 'fx-name') ?? 'Field';
-  }
+  #setState(attr: string, value: boolean | null): void {
+    if (value === null) {
+      delAttribute(this.el, attr);
+      return;
+    }
 
-  get #errorEls(): NodeListOf<Element> {
-    const contextEl = this.el.form ?? document.body;
-    return contextEl.querySelectorAll(
-      `[fx-errors='${this.el.name}']`
-    );
-  }
-
-  get #disabled(): boolean {
-    return (
-      this.el.disabled
-      || !truthyAttr(getAttr(this.el, 'fx-validate'))
-    );
-  }
-
-  set #valid$(v: boolean) {
-    setAttr(this.el, 'fx-valid', `${v}`);
-  }
-
-  set #checking$(v: boolean) {
-    setAttr(this.el, 'fx-checking', `${v}`);
+    setAttribute(this.el, attr, `${value}`);
   }
 }

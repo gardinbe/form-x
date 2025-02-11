@@ -1,5 +1,5 @@
-import type { FXControl } from './control';
-import { arrayify, attrErrorReason, getAttr } from './utils';
+import type { Control } from './control';
+import { arrayify, attrErrorReason, getAttribute } from './utils';
 
 export const enum ValidationState {
   PASS,
@@ -9,8 +9,6 @@ export const enum ValidationState {
 export type Validation =
   | [ValidationState.PASS, null]
   | [ValidationState.FAIL, string];
-
-// context
 
 export type ValidationContext =
   | ValidationContextStandalone
@@ -30,7 +28,7 @@ export interface ValidationContextStandalone {
   /**
    * The control instance.
    */
-  control: FXControl;
+  control: Control;
 }
 
 export interface ValidationContextAttributed extends ValidationContextStandalone {
@@ -39,8 +37,6 @@ export interface ValidationContextAttributed extends ValidationContextStandalone
    */
   attributeValue: string;
 }
-
-// setup
 
 export const enum ValidatorPriority {
   LOW,
@@ -180,7 +176,7 @@ export class Validator {
    * @param control - Control to validate.
    * @returns Promise that resolves to the validation result.
    */
-  async run(control: FXControl): Promise<Validation> {
+  async run(control: Control): Promise<Validation> {
     const ctx: ValidationContextStandalone = {
       name: control.name,
       value: control.el.value,
@@ -189,7 +185,7 @@ export class Validator {
 
     if (this.attributes) {
       const attr = this.attributes
-        .map((a) => getAttr(control.el, a))
+        .map((a) => getAttribute(control.el, a))
         .find((v) => v !== null)
         ?? null;
 
@@ -214,7 +210,7 @@ export class Validator {
 
     if (this.attributes) {
       reason = this.attributes
-        .map((a) => getAttr(control.el, attrErrorReason(a)))
+        .map((a) => getAttribute(control.el, attrErrorReason(a)))
         .find((v) => v !== null)
         ?? reason;
     }

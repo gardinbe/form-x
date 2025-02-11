@@ -13,10 +13,8 @@ export {
 
 export {
   attrErrorReason,
-  getAttr,
   multiAttr,
   sanitizeAttrQuery,
-  setAttr,
   truthyAttr
 } from './attribute';
 
@@ -24,6 +22,16 @@ export {
   attributeObserver,
   childObserver
 } from './observer';
+
+export {
+  delAttribute,
+  getAttribute,
+  off,
+  on,
+  query,
+  queryAll,
+  setAttribute
+} from './dom-helpers';
 
 export {
   flattenEl,
