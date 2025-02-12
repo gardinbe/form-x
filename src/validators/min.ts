@@ -2,8 +2,8 @@ import type { ValidatorSetupAttributed } from '../validator';
 import { ValidatorPriority } from '../validator';
 
 export const minValue: ValidatorSetupAttributed = {
-  name: 'min-value',
-  attribute: 'min',
+  name: 'min',
+  attribute: 'fx-min',
   priority: ValidatorPriority.MEDIUM,
   fn: (i, ctx): void => {
     const min = Number(ctx.attributeValue);
@@ -12,7 +12,7 @@ export const minValue: ValidatorSetupAttributed = {
       !isFinite(min)
       || min < 0
     ) {
-      throw new Error(`${ctx.name} has an invalid minimum value`);
+      throw new Error(`${ctx.label} has an invalid minimum value`);
     }
 
     const val = Number(ctx.value);
@@ -24,6 +24,6 @@ export const minValue: ValidatorSetupAttributed = {
       return;
     }
 
-    i(`${ctx.name} must be greater than or equal to ${min}`);
+    i(`${ctx.label} must be greater than or equal to ${min}`);
   }
 };

@@ -1,7 +1,7 @@
 import { flattenNodes } from './flatten';
 
 /**
- * Returns a mutation observer which watches the children of the passed node.
+ * Returns a mutation observer that watches the children of the passed node.
  * @param node - Node to watch.
  * @param callback - Callback to execute when the children change.
  * @returns Mutation observer.
@@ -32,7 +32,7 @@ export const childObserver = (
 };
 
 /**
- * Returns a mutation observer which watches the attributes of the passed node.
+ * Returns a mutation observer that watches the attributes of the passed node.
  * @param node - Node to watch.
  * @param callback - Callback to execute when the attributes change.
  * @returns Mutation observer.

@@ -1,14 +1,14 @@
 import type { Control } from './control';
 import { arrayify, attrErrorReason, getAttribute } from './utils';
 
-export const enum ValidationState {
-  PASS,
-  FAIL
+export const enum ValidityState {
+  VALID,
+  INVALID
 }
 
-export type Validation =
-  | [ValidationState.PASS, null]
-  | [ValidationState.FAIL, string];
+export type Validity =
+  | [ValidityState.VALID, null]
+  | [ValidityState.INVALID, string | null];
 
 export type ValidationContext =
   | ValidationContextStandalone
@@ -18,7 +18,7 @@ export interface ValidationContextStandalone {
   /**
    * The name of the control.
    */
-  name: string;
+  label: string;
 
   /**
    * The value of the control.
@@ -44,7 +44,7 @@ export const enum ValidatorPriority {
   HIGH
 }
 
-export type InvalidationFunction = (reason: string) => void;
+export type InvalidationFunction = (reason?: string) => void;
 
 export type ValidatorFunction<
   C extends ValidationContextStandalone = ValidationContextStandalone
@@ -79,17 +79,17 @@ export interface ValidatorSetupStandalone<
    * The available priorities are:
    *
    * **Low (0)** - Ran after all other validators.
-   * - `pattern`
-   * - `preset`
+   * - `fx-pattern`
+   * - `fx-preset`
    *
    * **Medium (1)** - Ran after high priority validators.
-   * - `minlength`
-   * - `maxlength`
-   * - `min`
-   * - `max`
+   * - `fx-minlength`
+   * - `fx-maxlength`
+   * - `fx-min`
+   * - `fx-max`
    *
    * **High (2)** - Ran first.
-   * - `required`
+   * - `fx-required`
    *
    * @default 0 // ValidatorPriority.LOW
    */
@@ -176,9 +176,9 @@ export class Validator {
    * @param control - Control to validate.
    * @returns Promise that resolves to the validation result.
    */
-  async run(control: Control): Promise<Validation> {
+  async run(control: Control): Promise<Validity> {
     const ctx: ValidationContextStandalone = {
-      name: control.name,
+      label: control.label,
       value: control.el.value,
       control
     };
@@ -190,22 +190,25 @@ export class Validator {
         ?? null;
 
       if (attr === null) {
-        return [ValidationState.PASS, null];
+        return [ValidityState.VALID, null];
       }
 
       (ctx as ValidationContextAttributed).attributeValue = attr;
     }
 
-    let reason = null as string | null;
+    let
+      invalidated = false as boolean,
+      reason = null as string | null;
 
     const invalidate: InvalidationFunction = (r) => {
-      reason = r;
+      invalidated = true;
+      reason = r ?? null;
     };
 
     await this.fn(invalidate, ctx);
 
-    if (!reason) {
-      return [ValidationState.PASS, null];
+    if (!invalidated) {
+      return [ValidityState.VALID, null];
     }
 
     if (this.attributes) {
@@ -215,6 +218,6 @@ export class Validator {
         ?? reason;
     }
 
-    return [ValidationState.FAIL, reason];
+    return [ValidityState.INVALID, reason];
   }
 }

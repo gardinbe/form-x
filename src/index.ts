@@ -20,17 +20,17 @@ export {
 
 export {
   type InvalidationFunction,
-  type Validation,
   type ValidationContext,
   type ValidationContextAttributed,
   type ValidationContextStandalone,
-  ValidationState,
   Validator,
   type ValidatorFunction,
   ValidatorPriority,
   type ValidatorSetup,
   type ValidatorSetupAttributed,
-  type ValidatorSetupStandalone
+  type ValidatorSetupStandalone,
+  type Validity,
+  ValidityState
 } from './validator';
 
 export {

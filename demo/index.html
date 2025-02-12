@@ -20,6 +20,22 @@
 
 <body>
   <style>
+    body {
+      font: 1rem 'Fira Sans', sans-serif;
+      background: #222;
+      color: #fff;
+    }
+
+    input,
+    textarea,
+    select,
+    button {
+      background: #111;
+      padding: 5px 10px;
+      color: white;
+      accent-color: #111;
+    }
+
     form *[fx-checking=true] {
       background: gray;
     }
@@ -29,7 +45,10 @@
     }
   </style>
 
-  <form id="form">
+  <form
+    id="form"
+    fx-validate
+  >
     <fieldset>
       <label for="email">
         Email address:
@@ -39,13 +58,12 @@
         id="email"
         name="email"
         fx-validate
-        fx-start-on="blur"
         fx-on="input"
         fx-label="Email"
-        required
-        required:error="Please enter an email address"
-        preset="email"
-        preset:error="This is not a valid email address"
+        fx-required
+        fx-required:error="Please enter an email address"
+        fx-preset="email"
+        fx-preset:error="This is not a valid email address"
       />
       <ul fx-errors="email"></ul>
     </fieldset>
@@ -62,9 +80,9 @@
         fx-validate
         fx-on="input"
         fx-label="Username"
-        required
-        required:error="Please enter a username"
-        minlength="3"
+        fx-required
+        fx-required:error="Please enter a username"
+        fx-minlength="3"
       />
       <ul fx-errors="username"></ul>
     </fieldset>
@@ -81,10 +99,10 @@
         fx-validate
         fx-on="input"
         fx-label="Password"
-        required
-        required:error="Please enter a password"
-        minlength="6"
-        minlength:error="Password must be at least 6 characters"
+        fx-required
+        fx-required:error="Please enter a password"
+        fx-minlength="6"
+        fx-minlength:error="Password must be at least 6 characters"
       />
       <ul fx-errors="password"></ul>
     </fieldset>
@@ -100,12 +118,12 @@
         fx-validate
         fx-on="input"
         fx-label="Age"
-        required
-        required:error="Please enter an age"
-        min="0"
-        min:error="Age must be greater than 0"
-        max="100"
-        max:error="Age must be less than 100"
+        fx-required
+        fx-required:error="Please enter an age"
+        fx-min="0"
+        fx-min:error="Age must be greater than 0"
+        fx-max="100"
+        fx-max:error="Age must be less than 100"
       />
       <ul fx-errors="age"></ul>
     </fieldset>
@@ -122,8 +140,8 @@
           fx-validate
           fx-on="change"
           fx-label="Gender"
-          required
-          required:error="Please select a gender"
+          fx-required
+          fx-required:error="Please select a gender"
         />
         Male
       </label>
@@ -156,8 +174,8 @@
         fx-validate
         fx-on="change"
         fx-label="Occupation"
-        required
-        required:error="Please select an occupation"
+        fx-required
+        fx-required:error="Please select an occupation"
       >
         <option value="">Select an occupation</option>
         <option value="student">Student</option>
@@ -178,14 +196,14 @@
         fx-validate
         fx-on="input"
         fx-label="Account number"
-        required
-        required:error="Please enter an account number"
-        minlength="6"
-        minlength:error="Account number must be at least 6 characters"
-        maxlength="10"
-        maxlength:error="Account number must be at most 10 characters"
-        pattern="^[A-Za-z]{2}"
-        pattern:error="Account number must start with 2 letters"
+        fx-required
+        fx-required:error="Please enter an account number"
+        fx-minlength="6"
+        fx-minlength:error="Account number must be at least 6 characters"
+        fx-maxlength="10"
+        fx-maxlength:error="Account number must be at most 10 characters"
+        fx-pattern="[A-Z]"
+        fx-pattern:error="Account number must have at least one capital letter"
       />
       <ul fx-errors="account-number"></ul>
     </fieldset>

@@ -6,19 +6,19 @@ import { ValidatorPriority } from '../validator';
 export interface Preset {
   name: string;
   pattern: RegExp;
-  error(dname: string): string;
+  error(label: string): string;
 }
 
 export const defaultPresets: Record<string, Preset> = {
   email: {
     name: 'email',
     pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-    error: (dname) => `${dname} is not in a valid format`
+    error: (label) => `${label} is not in a valid format`
   },
   phone: {
     name: 'phone',
     pattern: /^[\s+()\d]*$/,
-    error: (dname) => `${dname} is not in a valid format`
+    error: (label) => `${label} is not in a valid format`
   }
 };
 
@@ -37,15 +37,15 @@ const getSelectedPresets = (attr: string): Preset[] => {
 
 export const preset: ValidatorSetupAttributed = {
   name: 'preset',
-  attribute: 'preset',
+  attribute: 'fx-preset',
   priority: ValidatorPriority.LOW,
   fn: (i, ctx): void => {
     const selectedPresets = getSelectedPresets(ctx.attributeValue);
     const valid = selectedPresets.every((p) => p.pattern.test(ctx.value));
     const reason = selectedPresets.length === 1
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      ? selectedPresets[0]!.error(ctx.name)
-      : `${ctx.name} is not in a valid format`;
+      ? selectedPresets[0]!.error(ctx.label)
+      : `${ctx.label} is not in a valid format`;
 
     if (valid) {
       return;

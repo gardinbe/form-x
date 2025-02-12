@@ -19,7 +19,7 @@ import type {
   ValidatorSetupAttributed,
   ValidatorSetupStandalone
 } from './validator';
-import { ValidationState, Validator, ValidatorPriority } from './validator';
+import { Validator, ValidatorPriority, ValidityState } from './validator';
 
 export type CheckRevoker = () => void;
 
@@ -79,6 +79,7 @@ export class Control<E extends ControlElement = ControlElement> {
 
   readonly #errors: Set<string>;
   #valid: boolean;
+  #checking: boolean;
   #started: boolean;
 
   readonly #validators: Map<string | symbol, Validator>;
@@ -105,9 +106,12 @@ export class Control<E extends ControlElement = ControlElement> {
     this.el = el;
     this.members = new Set([el]);
 
-    this.#valid = true;
     this.#errors = new Set();
+    this.#valid = true;
+    this.#checking = false;
     this.#started = false;
+
+    // validators
 
     this.#validators = new Map();
     this.#revoker = null;
@@ -127,7 +131,7 @@ export class Control<E extends ControlElement = ControlElement> {
     // handle starting events
 
     this.#startEvents = new Set(
-      multiAttr(getAttribute(el, 'fx-start-on'))
+      multiAttr(getAttribute(el, 'fx-start-on') || 'blur')
     );
 
     this.#startHandler = (): void => {
@@ -136,28 +140,25 @@ export class Control<E extends ControlElement = ControlElement> {
     };
 
     this.#listeningStart = false;
-
     this.#listenStart();
-
-    if (!this.#startEvents.size) {
-      this.start();
-    }
 
     // watch attributes
 
     this.#ao = attributeObserver(el, this.#checkAttribute.bind(this));
 
-    // init state attributes
+    // set initial attributes
 
-    this.#setState('fx-valid', !this.inactive ? this.valid : null);
-    this.#setState('fx-checking', !this.inactive ? false : null);
+    this.#setAria('aria-required', truthyAttr(getAttribute(this.el, 'fx-required')));
+    this.#setAria('aria-valuemin', getAttribute(this.el, 'fx-min'));
+    this.#setAria('aria-valuemax', getAttribute(this.el, 'fx-max'));
+    this.#getErrorEls();
   }
 
   /**
-   * The current validity of the control.
+   * The last-checked validity of the control.
    *
-   * **Note**: This is the known validity of the control _since it was last checked_, not
-   * necessarily the current validity.
+   * **Note**: This is the validity of the control _since it was last checked_, not necessarily the
+   * current validity.
    *
    * To get the current validity, use `check()`.
    */
@@ -180,10 +181,10 @@ export class Control<E extends ControlElement = ControlElement> {
   }
 
   /**
-   * The `fx-name` attribute of the control.
+   * The `fx-label` attribute of the control.
    */
-  get name(): string {
-    return getAttribute(this.el, 'fx-name') ?? 'Field';
+  get label(): string {
+    return getAttribute(this.el, 'fx-label') ?? 'Field';
   }
 
   /**
@@ -202,8 +203,6 @@ export class Control<E extends ControlElement = ControlElement> {
    */
   async check(): Promise<boolean> {
     if (this.inactive) {
-      this.#setState('fx-valid', null);
-      this.#setState('fx-checking', null);
       this.setValid();
       return true;
     }
@@ -212,7 +211,9 @@ export class Control<E extends ControlElement = ControlElement> {
       this.start();
     }
 
-    this.#setState('fx-checking', true);
+    this.#checking = true;
+    this.#set('fx-checking', true);
+
     this.#removeErrors();
 
     if (this.#revoker) {
@@ -238,12 +239,12 @@ export class Control<E extends ControlElement = ControlElement> {
 
         if (
           revoked
-          || state !== ValidationState.FAIL
+          || state !== ValidityState.INVALID
         ) {
           return;
         }
 
-        this.setInvalid(reason);
+        this.setInvalid(reason ?? undefined);
         invalidated = true;
       });
 
@@ -268,7 +269,8 @@ export class Control<E extends ControlElement = ControlElement> {
       this.setValid();
     }
 
-    this.#setState('fx-checking', false);
+    this.#checking = false;
+    this.#set('fx-checking', false);
 
     return this.#valid;
   }
@@ -278,7 +280,10 @@ export class Control<E extends ControlElement = ControlElement> {
    */
   setValid(): void {
     this.#valid = true;
-    this.#setState('fx-valid', true);
+
+    this.#setAria('aria-invalid', false);
+    this.#set('fx-invalid', false);
+    this.#set('fx-valid', true);
 
     this.#removeErrors();
   }
@@ -289,7 +294,10 @@ export class Control<E extends ControlElement = ControlElement> {
    */
   setInvalid(reason?: string): void {
     this.#valid = false;
-    this.#setState('fx-valid', false);
+
+    this.#setAria('aria-invalid', true);
+    this.#set('fx-valid', false);
+    this.#set('fx-invalid', true);
 
     if (!reason) {
       return;
@@ -385,6 +393,7 @@ export class Control<E extends ControlElement = ControlElement> {
   start(): void {
     this.#ignoreStart();
     this.#started = true;
+    this.#set('fx-started', true);
     this.#listenRepeat();
   }
 
@@ -398,8 +407,11 @@ export class Control<E extends ControlElement = ControlElement> {
     this.#ignoreStart();
     this.#ignoreRepeat();
 
-    this.#setState('fx-valid', null);
-    this.#setState('fx-checking', null);
+    this.#setAria('aria-invalid', null);
+    this.#set('fx-started', false);
+    this.#set('fx-valid', false);
+    this.#set('fx-invalid', false);
+    this.#set('fx-checking', false);
   }
 
   #removeErrors(): void {
@@ -411,11 +423,28 @@ export class Control<E extends ControlElement = ControlElement> {
   }
 
   #getErrorEls(): HTMLElement[] {
-    const contextEl = this.el.form ?? document.body;
-    return queryAll(
-        `[fx-errors='${this.el.name}']`,
-        contextEl
+    const els = queryAll(
+      `[fx-errors='${this.el.name}']`,
+      this.el.form ?? document.body
     );
+
+    for (const el of els) {
+      el.replaceChildren();
+      el.id ||= crypto.randomUUID();
+      el.role ||= 'alert';
+      el.ariaLive ||= 'assertive';
+    }
+
+    const ids = els
+      .map((el) => el.id)
+      .filter((id) => !!id)
+      .join(' ');
+
+    if (ids) {
+      this.#setAria('aria-describedby', ids);
+    }
+
+    return els;
   }
 
   #listenRepeat(): void {
@@ -448,8 +477,8 @@ export class Control<E extends ControlElement = ControlElement> {
 
   #listenStart(): void {
     for (const el of this.members) {
-      for (const event of this.#startEvents) {
-        on(el, event, this.#startHandler);
+      for (const ev of this.#startEvents) {
+        on(el, ev, this.#startHandler);
       }
     }
 
@@ -458,8 +487,8 @@ export class Control<E extends ControlElement = ControlElement> {
 
   #ignoreStart(): void {
     for (const el of this.members) {
-      for (const event of this.#startEvents) {
-        off(el, event, this.#startHandler);
+      for (const ev of this.#startEvents) {
+        off(el, ev, this.#startHandler);
       }
     }
 
@@ -467,69 +496,108 @@ export class Control<E extends ControlElement = ControlElement> {
   }
 
   #checkAttribute(attr: string): void {
-    if (
-      attr === 'disabled'
-      || attr === 'fx-validate'
-    ) {
-      this.#setState('fx-valid', !this.inactive ? this.valid : null);
-      this.#setState('fx-checking', !this.inactive ? false : null);
-    } else if (attr === 'fx-on') {
-      const listening = this.#listeningRepeat;
+    switch (attr) {
+      case 'disabled':
+      case 'fx-validate':
+        this.#setAria('aria-invalid', !this.valid);
+        this.#set('fx-started', this.#started);
+        this.#set('fx-valid', this.#started && this.valid);
+        this.#set('fx-invalid', this.#started && !this.valid);
+        this.#set('fx-checking', this.#checking);
+        break;
 
-      if (listening) {
-        this.#ignoreRepeat();
+      case 'fx-on': {
+        const listening = this.#listeningRepeat;
+
+        if (listening) {
+          this.#ignoreRepeat();
+        }
+
+        this.#repeatEvents.clear();
+        const events = multiAttr(getAttribute(this.el, 'fx-on'));
+
+        for (const ev of events) {
+          this.#repeatEvents.add(ev);
+        }
+
+        if (listening) {
+          this.#listenRepeat();
+        }
+
+        break;
       }
 
-      this.#repeatEvents.clear();
-      const events = multiAttr(getAttribute(this.el, 'fx-on'));
+      case 'fx-start-on': {
+        const listening = this.#listeningStart;
 
-      for (const event of events) {
-        this.#repeatEvents.add(event);
+        if (listening) {
+          this.#ignoreStart();
+        }
+
+        this.#startEvents.clear();
+        const events = multiAttr(getAttribute(this.el, 'fx-start-on'));
+
+        for (const ev of events) {
+          this.#startEvents.add(ev);
+        }
+
+        if (listening) {
+          this.#listenStart();
+        }
+
+        break;
       }
 
-      if (listening) {
-        this.#listenRepeat();
-      }
-    } else if (attr === 'fx-start-on') {
-      const listening = this.#listeningStart;
+      case 'fx-required':
+        this.#setAria('aria-required', truthyAttr(getAttribute(this.el, 'fx-required')));
+        break;
 
-      if (listening) {
-        this.#ignoreStart();
-      }
+      case 'fx-min':
+        this.#setAria('aria-valuemin', getAttribute(this.el, 'fx-min'));
+        break;
 
-      this.#startEvents.clear();
-      const events = multiAttr(getAttribute(this.el, 'fx-start-on'));
-
-      for (const event of events) {
-        this.#startEvents.add(event);
-      }
-
-      if (listening) {
-        this.#listenStart();
-      }
-    } else if (
-      mergeMapsToArray(fx.validators, this.#validators)
-        .flatMap((v) => arrayify(v.attributes))
-        .flatMap((a) => a
-          ? [a, attrErrorReason(a)]
-          : [])
-        .concat([
-          'disabled',
-          'fx-validate',
-          'fx-name'
-        ])
-        .includes(attr)
-    ) {
-      void this.check();
+      case 'fx-max':
+        this.#setAria('aria-valuemax', getAttribute(this.el, 'fx-max'));
+        break;
     }
-  }
 
-  #setState(attr: string, value: boolean | null): void {
-    if (value === null) {
-      delAttribute(this.el, attr);
+    if (!this.#started) {
       return;
     }
 
-    setAttribute(this.el, attr, `${value}`);
+    const validatorAttrs = mergeMapsToArray(fx.validators, this.#validators)
+      .flatMap((v) => arrayify(v.attributes))
+      .filter((a): a is string => !!a)
+      .flatMap((a) => [a, attrErrorReason(a)])
+      .concat([
+        'disabled',
+        'fx-validate',
+        'fx-label'
+      ]);
+
+    if (!validatorAttrs.includes(attr)) {
+      return;
+    }
+
+    void this.check();
+  }
+
+  #set(attr: `fx-${string}`, value: boolean): void {
+    if (
+      !this.inactive
+      && value
+    ) {
+      setAttribute(this.el, attr, '');
+    } else {
+      delAttribute(this.el, attr);
+    }
+  }
+
+  #setAria(attr: `aria-${string}`, value: boolean | string | number | null): void {
+    if (value !== null) {
+      setAttribute(this.el, attr, `${!this.inactive && value}`);
+    } else {
+      delAttribute(this.el, attr);
+    }
   }
 }

@@ -2,8 +2,8 @@ import type { ValidatorSetupAttributed } from '../validator';
 import { ValidatorPriority } from '../validator';
 
 export const maxValue: ValidatorSetupAttributed = {
-  name: 'max-value',
-  attribute: 'max',
+  name: 'max',
+  attribute: 'fx-max',
   priority: ValidatorPriority.MEDIUM,
   fn: (i, ctx): void => {
     const max = Number(ctx.attributeValue);
@@ -12,7 +12,7 @@ export const maxValue: ValidatorSetupAttributed = {
       !isFinite(max)
       || max < 0
     ) {
-      throw new Error(`${ctx.name} has an invalid maximum value`);
+      throw new Error(`${ctx.label} has an invalid maximum value`);
     }
 
     const val = Number(ctx.value);
@@ -24,6 +24,6 @@ export const maxValue: ValidatorSetupAttributed = {
       return;
     }
 
-    i(`${ctx.name} must be less than or equal to ${max}`);
+    i(`${ctx.label} must be less than or equal to ${max}`);
   }
 };

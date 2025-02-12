@@ -30,7 +30,10 @@ export class Form<E extends FormElement = FormElement> {
   readonly el: E;
 
   #valid: boolean;
+  #checking: boolean;
 
+  #submitting: boolean;
+  #propagate: boolean;
   readonly #submitHandler: (ev: SubmitEvent) => void;
   readonly #ao: MutationObserver;
 
@@ -43,25 +46,24 @@ export class Form<E extends FormElement = FormElement> {
    */
   constructor(form: E) {
     this.el = form;
+
     this.#valid = true;
+    this.#checking = false;
 
-    this.#submitHandler = (ev): void => {
-      ev.preventDefault();
-      ev.stopImmediatePropagation();
-      void this.submit();
-    };
+    // handle submit
 
-    on(form, 'reset', this.#submitHandler);
+    this.#submitting = false;
+    this.#propagate = false;
+    this.#submitHandler = this.#handleSubmit.bind(this);
+    on(form, 'submit', this.#submitHandler);
 
     // watch attributes
 
     this.#ao = attributeObserver(form, this.#checkAttribute.bind(this));
 
-    // init state attributes
+    // set initial attributes
 
-    this.el.noValidate = !this.inactive;
-    this.#setState('fx-valid', !this.inactive ? this.valid : null);
-    this.#setState('fx-checking', !this.inactive ? false : null);
+    form.noValidate = !this.inactive;
   }
 
   /**
@@ -76,10 +78,10 @@ export class Form<E extends FormElement = FormElement> {
   }
 
   /**
-   * The current validity of the form.
+   * The last-checked validity of the form.
    *
-   * **Note**: This is the known validity of the form _since it was last checked_, not necessarily
-   * the current validity.
+   * **Note**: This is the validity of the form _since it was last checked_, not necessarily the
+   * current validity.
    *
    * To get the current validity, use `check()`.
    */
@@ -104,12 +106,11 @@ export class Form<E extends FormElement = FormElement> {
     this.#valid = true;
 
     if (this.inactive) {
-      this.#setState('fx-valid', null);
-      this.#setState('fx-checking', null);
       return true;
     }
 
-    this.#setState('fx-checking', true);
+    this.#checking = true;
+    this.#set('fx-checking', true);
 
     const results = await Promise.all(
       [...this.controls].map(async (c) => c.check())
@@ -123,7 +124,9 @@ export class Form<E extends FormElement = FormElement> {
       this.setInvalid();
     }
 
-    this.#setState('fx-checking', false);
+    this.#checking = false;
+    this.#set('fx-checking', false);
+
     return this.#valid;
   }
 
@@ -132,7 +135,8 @@ export class Form<E extends FormElement = FormElement> {
    */
   setValid(): void {
     this.#valid = true;
-    this.#setState('fx-valid', true);
+    this.#set('fx-invalid', false);
+    this.#set('fx-valid', true);
   }
 
   /**
@@ -140,17 +144,27 @@ export class Form<E extends FormElement = FormElement> {
    */
   setInvalid(): void {
     this.#valid = false;
-    this.#setState('fx-valid', false);
+    this.#set('fx-valid', false);
+    this.#set('fx-invalid', true);
   }
 
+  /**
+   * Submits the form.
+   */
   async submit(): Promise<void> {
     await this.check();
+
+    // wait for event loop to process current event
+
+    await new Promise((res) => setTimeout(res));
+
+    this.#submitting = false;
 
     if (!this.#valid) {
       return;
     }
 
-    off(this.el, 'submit', this.#submitHandler);
+    this.#propagate = true;
     this.el.requestSubmit();
   }
 
@@ -162,26 +176,46 @@ export class Form<E extends FormElement = FormElement> {
   destroy(): void {
     this.#ao.disconnect();
     off(this.el, 'submit', this.#submitHandler);
-
     this.el.noValidate = false;
-    this.#setState('fx-valid', null);
-    this.#setState('fx-checking', null);
+    this.#set('fx-valid', false);
+    this.#set('fx-invalid', false);
+    this.#set('fx-checking', false);
+  }
+
+  #handleSubmit(ev: SubmitEvent): void {
+    if (this.#propagate) {
+      this.#propagate = false;
+      return;
+    }
+
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+
+    if (this.#submitting) {
+      return;
+    }
+
+    this.#submitting = true;
+    void this.submit();
   }
 
   #checkAttribute(attr: string): void {
     if (attr === 'fx-validate') {
       this.el.noValidate = !this.inactive;
-      this.#setState('fx-valid', !this.inactive ? this.valid : null);
-      this.#setState('fx-checking', !this.inactive ? false : null);
+      this.#set('fx-valid', this.valid);
+      this.#set('fx-invalid', !this.valid);
+      this.#set('fx-checking', this.#checking);
     }
   }
 
-  #setState(attr: string, value: boolean | string | number | null): void {
-    if (value === null) {
+  #set(attr: `fx-${string}`, value: boolean): void {
+    if (
+      !this.inactive
+      && value
+    ) {
+      setAttribute(this.el, attr, '');
+    } else {
       delAttribute(this.el, attr);
-      return;
     }
-
-    setAttribute(this.el, attr, `${value}`);
   }
 }
