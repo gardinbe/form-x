@@ -1,4 +1,4 @@
-![form-x](./logo.svg)
+[![form-x](./logo.svg)](https://github.com/gardinbe/form-x)
 
 ## introduction
 
